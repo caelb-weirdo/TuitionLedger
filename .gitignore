@@ -31,9 +31,6 @@ lerna-debug.log*
 dist/
 dist-ssr/
 
-# Project planning/vibe-coding docs — not part of the codebase
-Vibe-Coding/
-project-plans/
 
 # IDE
 .vscode/
@@ -60,4 +57,3 @@ logs/
 Thumbs.db
 .DS_Store
 
-docs/Project plans/
