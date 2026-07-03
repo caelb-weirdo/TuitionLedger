@@ -1,49 +1,162 @@
 # TuitionLedger
 
-A mobile-friendly tuition class management system for QR attendance, fee tracking, and parent reminders.
+A mobile-first tuition class management system for individual tutors and small tuition centres. Handles QR-based attendance, fee tracking, device verification, and WhatsApp parent reminders — purpose-built for the Sri Lankan tuition market.
 
-Built for individual tutors and small tuition class owners in Sri Lanka.
+[![Frontend — Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://netlify.com)
+[![Backend — Vercel](https://img.shields.io/badge/Backend-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
+[![Database — Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Demo Credentials](#demo-credentials)
+- [Deployment](#deployment)
+- [API Reference](#api-reference)
+- [Database Schema](#database-schema)
+- [Design System](#design-system)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Overview
+
+Manual tuition management leads to proxy attendance, forgotten payments, and slow parent communication. TuitionLedger solves this with a lightweight web app that tutors can run on any device — no native app install required.
+
+**Target users:** Individual tutors and small tuition class owners in Sri Lanka.
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| Role-based auth | Separate tutor and student portals with JWT authentication |
+| Student management | Add, edit, and enrol students into classes |
+| Class management | Create classes, manage schedules and enrolments |
+| QR attendance | Tutors generate time-limited QR codes; students scan to mark attendance |
+| Device verification | One approved device per student prevents proxy attendance |
+| Manual correction | Tutors can override attendance records with a mandatory reason |
+| Fee tracking | Per-student monthly fee records with paid / unpaid / partial / overdue statuses |
+| WhatsApp reminders | Click-to-chat wa.me links — tutor sends manually and confirms in-app |
+| Reports | Attendance and fee reports with print support |
+| Tutor settings | Configurable QR expiry time and reminder message templates |
+| Responsive UI | Sidebar layout on desktop, bottom navigation on mobile |
+
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React + Vite + Plain CSS |
-| Backend | Python Flask (Vercel-compatible) |
-| Database | Supabase PostgreSQL |
-| Frontend Hosting | Netlify |
-| Backend Hosting | Vercel |
-| Auth | JWT + hashed passwords |
+| Layer | Technology | Version |
+|---|---|---|
+| Frontend | React + Vite | React 19, Vite 8 |
+| Routing | React Router DOM | v7 |
+| HTTP client | Axios | v1 |
+| QR generation | qrcode.react | v4 |
+| Linting | oxlint | v1 |
+| Backend | Python Flask | 3.0.3 |
+| CORS | flask-cors | 4.0.1 |
+| Auth | PyJWT + Werkzeug | JWT 2.9, Werkzeug 3.0 |
+| Database driver | psycopg3 | ≥3.1.18 |
+| Database | Supabase PostgreSQL | — |
+| Frontend hosting | Netlify | — |
+| Backend hosting | Vercel (serverless) | — |
 
-## Features (MVP)
+---
 
-- Tutor & student login with role-based redirect
-- Student and class management
-- Device registration and tutor approval
-- QR-code attendance with expiry and duplicate prevention
-- Manual attendance correction with required reason
-- Monthly fee tracking (paid/unpaid/partial/overdue)
-- WhatsApp click-to-chat and phone reminders (manual send + confirm)
-- Reports with print support
-- Tutor settings (QR time, reminder templates)
-- Responsive UI (sidebar desktop, bottom nav mobile)
+## Architecture
+
+```
+Frontend                          Backend                        Database
+─────────────────────             ──────────────────────────     ──────────────
+Page Component
+  └─ Service (api.js)  ──HTTPS──► Route
+       └─ Axios                     └─ Controller               Supabase
+                                         └─ Service      ──────► PostgreSQL
+                                               └─ Repository
+```
+
+### Design Patterns
+
+| Pattern | Where used |
+|---|---|
+| Repository Pattern | All database access is isolated in `repositories/` |
+| Service Layer | Business rules (QR expiry, device checks, duplicate prevention) live in `services/` |
+| Strategy Pattern | `QRAttendanceStrategy` and `ManualAttendanceStrategy` for attendance marking |
+| Factory Pattern | `ReminderFactory` produces WhatsApp or phone reminder objects |
+
+---
 
 ## Project Structure
 
 ```
 TuitionLedger/
-  frontend/          React app
-  backend/           Flask API
-  Vibe-Coding/       Project specification documents
+├── frontend/                     # React + Vite application
+│   ├── src/
+│   │   ├── components/           # Reusable UI components
+│   │   ├── context/              # Auth and Toast context providers
+│   │   ├── layouts/              # TutorLayout, StudentLayout
+│   │   ├── pages/                # Route-level page components
+│   │   ├── services/             # Axios API service modules
+│   │   ├── styles/               # Global CSS, variables, layout
+│   │   └── utils/                # Helper utilities
+│   ├── public/
+│   ├── index.html
+│   └── vite.config.js
+│
+├── backend/                      # Python Flask API
+│   ├── app/
+│   │   ├── config/               # Database connection, app settings
+│   │   ├── controllers/          # Request/response handlers
+│   │   ├── middleware/           # JWT auth middleware
+│   │   ├── repositories/         # Supabase/PostgreSQL queries
+│   │   ├── routes/               # URL-to-controller mappings
+│   │   ├── services/             # Business logic layer
+│   │   └── utils/                # Password, token, QR, validation helpers
+│   ├── api/
+│   │   └── index.py              # Vercel serverless entry point
+│   ├── database/
+│   │   ├── schema.sql            # Full database schema
+│   │   └── seed.py               # Demo data seeder
+│   ├── requirements.txt
+│   ├── run.py                    # Local development server
+│   └── vercel.json
+│
+├── docs/
+│   ├── DEPLOYMENT.md             # Step-by-step deployment guide
+│   ├── TESTING.md                # Manual testing checklist
+│   └── VIVA_NOTES.md             # Architecture and design notes
+│
+└── Vibe-Coding/                  # Project specification documents
+    ├── 01_PRD_Product_Requirements.md
+    ├── 02_TRD_Technical_Requirements.md
+    ├── 06_Backend_Schema.md
+    ├── 07_API_Contract.md
+    └── ...
 ```
 
-## Quick Start (Local)
+---
 
-### 1. Database (Supabase)
+## Getting Started
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Open SQL Editor and run `backend/database/schema.sql`
-3. Copy your database connection string
+### Prerequisites
+
+- Node.js 18+
+- Python 3.11+
+- A free [Supabase](https://supabase.com) account
+
+### 1. Database setup (Supabase)
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** and run the full contents of `backend/database/schema.sql`
+3. Copy your database connection string from **Project Settings → Database**
 
 ### 2. Backend
 
@@ -51,14 +164,28 @@ TuitionLedger/
 cd backend
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your SUPABASE_DB_URL and JWT_SECRET
+```
+
+Edit `.env`:
+
+```env
+SUPABASE_DB_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
+JWT_SECRET=your-super-secret-jwt-key
+FLASK_ENV=development
+FRONTEND_URL=http://localhost:5173
+```
+
+Start the server:
+
+```bash
 python run.py
 ```
 
-Seed demo data:
+The API will be available at `http://localhost:5000/api`.
+
+Optionally seed demo data:
 
 ```bash
-cd backend
 python -m database.seed
 ```
 
@@ -68,84 +195,137 @@ python -m database.seed
 cd frontend
 npm install
 cp .env.example .env
-# Set VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+Edit `.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+Start the dev server:
+
+```bash
 npm run dev
 ```
 
-Open http://localhost:5173
+Open [http://localhost:5173](http://localhost:5173).
 
-### Demo Credentials
+---
+
+## Demo Credentials
+
+After running the seeder, use these credentials to explore the app:
 
 | Role | Email | Password |
-|------|-------|----------|
+|---|---|---|
 | Tutor | tutor@tuitionledger.com | Tutor@123 |
 | Student | kamal@student.com | Student@123 |
 
+---
+
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full deployment guide.
+Deploy in this order: **Supabase → Vercel → Netlify**
 
-### Order
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full step-by-step guide.
 
-1. Supabase (database + schema + seed)
-2. Vercel (backend)
-3. Netlify (frontend)
+### Environment variables summary
 
-## Google Stitch UI
+**Vercel (backend)**
 
-The UI follows the Google Stitch design direction specified in the project docs:
+| Variable | Value |
+|---|---|
+| `SUPABASE_DB_URL` | Supabase PostgreSQL connection string |
+| `JWT_SECRET` | Strong random secret (32+ characters) |
+| `FRONTEND_URL` | Your Netlify deployment URL |
+| `FLASK_ENV` | `production` |
 
-- Light mode with teal (#0D9488) primary
-- Green (#16A34A) success actions
-- Soft shadow white cards (16px radius)
-- 240px sidebar (desktop) / 64px bottom nav (mobile)
-- Inter typography, pill badges, clean tables
+**Netlify (frontend)**
 
-Use this Stitch prompt for further design iterations:
+| Variable | Value |
+|---|---|
+| `VITE_API_BASE_URL` | Your Vercel backend URL + `/api` |
 
-```
-Create a clean, modern, mobile-friendly SaaS dashboard for TuitionLedger.
-Use #0D9488 teal, #16A34A green, #F8FAFC background, white 16px cards,
-soft shadows, 12px buttons, Inter font, pill badges, light sidebar desktop,
-bottom nav mobile.
-```
+### Verify the deployment
 
-## Architecture
-
-```
-Frontend: Page → Service → Axios → Flask API
-Backend:  Route → Controller → Service → Repository → PostgreSQL
+```bash
+curl https://your-backend.vercel.app/api/health
+# Expected: {"success": true, "message": "TuitionLedger API is running"}
 ```
 
-### Design Patterns
+---
 
-- **Repository Pattern** — database access
-- **Service Layer** — business rules
-- **Strategy Pattern** — QR vs manual attendance
-- **Factory Pattern** — WhatsApp/phone reminder creation
-
-## API
+## API Reference
 
 Base URL: `/api`
 
-Key endpoints:
-- `POST /api/auth/login`
-- `GET /api/dashboard/summary`
-- `POST /api/attendance-sessions`
-- `POST /api/attendance/mark`
-- `GET /api/fees/unpaid`
-- `POST /api/reminders/whatsapp/prepare`
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/login` | Authenticate a user, returns JWT |
+| `GET` | `/dashboard/summary` | Tutor dashboard stats |
+| `GET` | `/students` | List all students |
+| `POST` | `/students` | Create a student |
+| `GET` | `/classes` | List all classes |
+| `POST` | `/attendance-sessions` | Generate a QR attendance session |
+| `POST` | `/attendance/mark` | Student marks attendance via QR |
+| `GET` | `/fees/unpaid` | List unpaid fees |
+| `POST` | `/reminders/whatsapp/prepare` | Prepare a WhatsApp reminder link |
 
-Full API contract: `Vibe-Coding/07_API_Contract.md`
+Full contract with request/response schemas: [`Vibe-Coding/07_API_Contract.md`](Vibe-Coding/07_API_Contract.md)
 
-## Testing Checklist
+---
 
-See `docs/TESTING.md`
+## Database Schema
 
-## Viva Explanation
+Core tables:
 
-TuitionLedger uses a layered backend architecture. Routes connect URLs to controllers. Controllers handle requests and responses. Services contain business rules such as QR expiry checking, device approval checking, and duplicate attendance prevention. Repositories handle Supabase database queries. The frontend uses React with role-based routing, and WhatsApp reminders use click-to-chat links only — the tutor manually sends messages and confirms in the app.
+| Table | Purpose |
+|---|---|
+| `app_users` | Tutor and student user accounts |
+| `students` | Student profiles linked to a tutor |
+| `classes` | Class definitions |
+| `class_enrollments` | Student–class relationships |
+| `devices` | Registered student devices (UUID-based) |
+| `attendance_sessions` | QR session tokens with expiry |
+| `attendance_records` | Per-session attendance entries |
+| `fee_payments` | Monthly fee records per student per class |
+| `reminders` | Reminder log with status tracking |
+| `tutor_settings` | Per-tutor configuration (QR expiry, templates) |
+
+Full schema: [`backend/database/schema.sql`](backend/database/schema.sql)
+
+---
+
+## Design System
+
+The UI follows a clean, mobile-first SaaS design direction:
+
+| Token | Value |
+|---|---|
+| Primary colour | `#0D9488` (teal) |
+| Success colour | `#16A34A` (green) |
+| Background | `#F8FAFC` |
+| Card style | White, `16px` border radius, soft shadow |
+| Typography | Inter |
+| Desktop nav | 240px fixed sidebar |
+| Mobile nav | 64px bottom navigation bar |
+| Badges | Pill shape |
+
+---
+
+## Contributing
+
+This is an educational project. Pull requests are welcome for bug fixes and improvements.
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "feat: add your feature"`
+4. Push to the branch: `git push -u origin feature/your-feature`
+5. Open a pull request against `main`
+
+---
 
 ## License
 
-Educational project — TuitionLedger MVP
+Educational project — TuitionLedger MVP. All rights reserved.
