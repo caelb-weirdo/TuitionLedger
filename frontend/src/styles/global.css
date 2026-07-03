@@ -1,0 +1,60 @@
+@import './variables.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: var(--font-body);
+  color: var(--color-text-main);
+  background: var(--color-bg-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: var(--font-body);
+}
+
+h1 { font-size: var(--h1); font-weight: 700; }
+h2 { font-size: var(--h2); font-weight: 600; }
+h3 { font-size: var(--h3); font-weight: 600; }
+
+.text-secondary { color: var(--color-text-secondary); }
+.text-center { text-align: center; }
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin-bottom: 4px;
+}
+
+.page-header p {
+  color: var(--color-text-secondary);
+}
+
+@media print {
+  .sidebar, .mobile-nav, .page-actions, .no-print {
+    display: none !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

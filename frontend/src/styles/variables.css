@@ -1,0 +1,31 @@
+:root {
+  --color-primary: #0D9488;
+  --color-primary-dark: #0F766E;
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+  --color-warning: #F97316;
+  --color-overdue: #991B1B;
+  --color-bg-main: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #111827;
+  --color-text-secondary: #64748B;
+  --color-border: #E2E8F0;
+  --radius-button: 12px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-badge: 999px;
+  --sidebar-width: 240px;
+  --mobile-nav-height: 64px;
+  --page-padding-desktop: 32px;
+  --page-padding-mobile: 16px;
+  --card-padding-large: 24px;
+  --card-padding-small: 20px;
+  --gap-card: 16px;
+  --font-body: 14px;
+  --font-student-mobile: 16px;
+  --h1: 28px;
+  --h2: 22px;
+  --h3: 18px;
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
