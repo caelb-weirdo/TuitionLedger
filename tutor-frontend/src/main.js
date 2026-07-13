@@ -1,0 +1,27 @@
+import "./style.css";
+
+const app = document.querySelector("#app");
+const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+const icon = (path) => `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="${path}"/></svg>`;
+
+function landingPage() {
+  app.innerHTML = `
+    <header class="site-header"><a class="logo" href="#top"><span>TL</span>TuitionLedger</a><nav><a href="#features">Features</a><a href="#flow">How it works</a><a class="button button-small" href="#login">Tutor login</a></nav></header>
+    <main id="top">
+      <section class="hero"><div class="hero-copy"><p class="kicker">A calmer classroom record</p><h1>Tuition classes, attendance, and fees in one simple system.</h1><p class="hero-text">TuitionLedger gives tutors a clear dashboard for students, classes, browser-approved QR attendance, monthly fees, and parent reminders.</p><div class="hero-actions"><a class="button" href="#login">Get started</a><a class="button button-ghost" href="#flow">View demo flow <span>↗</span></a></div></div><div class="mockups" aria-label="Tutor dashboard and student phone previews"><div class="laptop"><div class="screen"><div class="mini-top"><strong>TuitionLedger</strong><span>Overview</span></div><div class="mini-grid"><div><b>24</b><small>Students</small></div><div><b>06</b><small>Classes</small></div><div><b>92%</b><small>Attendance</small></div><div><b>03</b><small>Unpaid fees</small></div></div><div class="mini-chart"><span></span><span></span><span></span><span></span><span></span><span></span></div></div></div><div class="phone"><div class="phone-speaker"></div><div class="phone-screen"><p class="mini-label">STUDENT PWA</p><h3>Browser approved</h3><div class="check">${icon("M5 12l4 4L19 6")}</div><p>Ready to scan the attendance QR.</p><span class="status-pill">STU001 · Ready</span></div></div></div></section>
+      <section id="features" class="section"><div class="section-heading"><p class="kicker">One focused workspace</p><h2>Everything your next class needs.</h2></div><div class="feature-grid"><article class="feature-card"><span class="feature-icon">${icon("M4 5h16v14H4zM8 3v4m8-4v4M4 10h16")}</span><h3>Student registration</h3><p>Collect details from a QR link and approve each student from one page.</p></article><article class="feature-card"><span class="feature-icon">${icon("M12 3v18M3 12h18")}</span><h3>Browser-approved attendance</h3><p>Reduce fake attendance with a simple approved-browser check.</p></article><article class="feature-card"><span class="feature-icon">${icon("M4 7h16v10H4zM8 11h4")}</span><h3>Fee tracking</h3><p>See paid and unpaid monthly fees without paper registers.</p></article><article class="feature-card"><span class="feature-icon">${icon("M20 11.5a8 8 0 0 1-8 8 8 8 0 0 1-3.8-1L4 20l1.5-4.2A8 8 0 1 1 20 11.5Z")}</span><h3>WhatsApp reminders</h3><p>Open a prepared click-to-chat message and send it yourself.</p></article></div></section>
+      <section id="flow" class="section flow-section"><div class="section-heading"><p class="kicker">The demo flow</p><h2>From registration QR to a marked class.</h2></div><div class="flow"><div><span>01</span><h3>Create a class</h3><p>Add Grade 10 or 11, subject, schedule, and fee.</p></div><div><span>02</span><h3>Student registers</h3><p>The phone form captures details and a browser ID.</p></div><div><span>03</span><h3>Tutor approves</h3><p>Approval creates a student ID and browser access.</p></div><div><span>04</span><h3>Mark attendance</h3><p>The approved browser scans the time-limited class QR.</p></div></div></section>
+      <section id="login" class="final-cta"><p class="kicker">Ready for the next class?</p><h2>Keep the register simple.</h2><a class="button" href="mailto:tutor@example.com?subject=TuitionLedger%20demo">Open tutor workspace</a></section>
+    </main><footer><span class="logo"><span>TL</span>TuitionLedger</span><small>Simple tools for better tuition classes.</small></footer>`;
+}
+
+function dashboard() {
+  app.innerHTML = `<div class="app-shell"><aside><a class="logo" href="#dashboard"><span>TL</span>TuitionLedger</a><nav>${[["dashboard","Dashboard"],["students","Students"],["classes","Classes"],["attendance","Attendance"],["fees","Fees"],["settings","Settings"]].map(([id,label])=>`<a href="#${id}">${label}</a>`).join("")}</nav></aside><main class="workspace"><header class="workspace-header"><div><p class="kicker">Tutor workspace</p><h1>${location.hash.slice(1) || "Dashboard"}</h1></div><a class="button button-small" href="#top">Landing page</a></header><section class="dashboard-grid"><article class="summary-card accent"><small>Total students</small><strong>24</strong><span>+3 this month</span></article><article class="summary-card"><small>Total classes</small><strong>06</strong><span>Grade 10–11</span></article><article class="summary-card"><small>Today’s attendance</small><strong>92%</strong><span>Across 4 classes</span></article><article class="summary-card"><small>Unpaid fees</small><strong>03</strong><span>Open reminders</span></article></section><section class="panel"><div class="panel-heading"><div><p class="kicker">Next action</p><h2>Start with your class list</h2></div><a class="button" href="#classes">Manage classes</a></div><p class="muted">Create a class, generate a registration QR, and keep every attendance record in one place.</p></section></main></div>`;
+}
+
+function render() { location.hash === "#top" || !location.hash ? landingPage() : dashboard(); }
+window.addEventListener("hashchange", render); render();
+
+export { apiUrl };
+
