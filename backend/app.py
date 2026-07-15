@@ -376,6 +376,25 @@ def register_student():
     return response(dict(row), status=201)
 
 
+@app.get("/api/registration-requests/<request_id>/status")
+def registration_request_status(request_id):
+    """Return only the status for the browser that created the request."""
+    browser_id = request.args.get("browser_id", "").strip()
+    if not browser_id:
+        return response(message="Browser identity is required.", status=422)
+    with database() as db:
+        row = db.execute(
+            """select rr.status, s.student_code
+               from registration_requests rr
+               left join students s on s.tutor_id=rr.tutor_id and s.browser_id=rr.browser_id
+               where rr.id=%s and rr.browser_id=%s""",
+            (request_id, browser_id),
+        ).fetchone()
+    if not row:
+        return response(message="Registration request not found.", status=404)
+    return response({"status": row["status"], "student_code": row["student_code"]})
+
+
 @app.get("/api/registration-requests")
 @auth_required
 def registration_requests():

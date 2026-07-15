@@ -15,6 +15,7 @@ localStorage.setItem("tuitionledger-browser", browserId);
 const params = new URLSearchParams(location.search);
 const token = params.get("registration_token");
 const attendanceToken = params.get("attendance_token");
+const savedRequestKey = "tuitionledger-registration-request";
 const subjects = ["Maths", "Science", "English", "Tamil", "History"];
 const api = async (path, options = {}) => {
   const r = await fetch(`${apiUrl}${path}`, {
@@ -39,7 +40,7 @@ function registration() {
     button.disabled = true;
     notice.textContent = "Sending your request...";
     try {
-      await api("/api/register-student", {
+      const request = await api("/api/register-student", {
         method: "POST",
         body: JSON.stringify({
           registration_token: token,
@@ -52,9 +53,28 @@ function registration() {
           browser_id: browserId,
         }),
       });
+      localStorage.setItem(savedRequestKey, request.id);
       notice.textContent = "Request sent. Waiting for tutor approval.";
       notice.className = "success";
       form.reset();
+      const poll = window.setInterval(async () => {
+        try {
+          const state = await api(`/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`);
+          if (state.status === "Approved") {
+            window.clearInterval(poll);
+            notice.textContent = `Approved. Your student ID is ${state.student_code}.`;
+            notice.className = "success approved";
+            button.textContent = "Registration approved";
+          } else if (state.status === "Rejected") {
+            window.clearInterval(poll);
+            notice.textContent = "Registration rejected. Please contact your tutor.";
+            notice.className = "error";
+            button.disabled = false;
+          }
+        } catch (_) {
+          // Keep the waiting state during short network interruptions.
+        }
+      }, 3000);
     } catch (error) {
       notice.textContent = error.message;
       notice.className = "error";
