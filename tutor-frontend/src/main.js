@@ -78,9 +78,6 @@ function authPage(signup = false) {
     input.type = visible ? "password" : "text";
     const b = document.querySelector(".password-toggle");
     b.setAttribute("aria-label", visible ? "Show password" : "Hide password");
-    b.innerHTML = visible
-      ? '<span aria-hidden="true">&#128065;</span>'
-      : '<span aria-hidden="true">&#128065;&#x0338;</span>';
   };
   document.querySelector("#auth-form").onsubmit = async (e) => {
     e.preventDefault();
