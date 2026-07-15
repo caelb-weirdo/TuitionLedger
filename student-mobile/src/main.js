@@ -15,7 +15,6 @@ localStorage.setItem("tuitionledger-browser", browserId);
 const params = new URLSearchParams(location.search);
 const token = params.get("registration_token");
 const attendanceToken = params.get("attendance_token");
-const savedRequestKey = "tuitionledger-registration-request";
 const subjects = ["Maths", "Science", "English", "Tamil", "History"];
 const api = async (path, options = {}) => {
   const r = await fetch(`${apiUrl}${path}`, {
@@ -53,23 +52,16 @@ function registration() {
           browser_id: browserId,
         }),
       });
-      localStorage.setItem(savedRequestKey, request.id);
-      notice.textContent = "Request sent. Waiting for tutor approval.";
-      notice.className = "success";
-      form.reset();
+      renderApprovalStatus(request.id);
       const poll = window.setInterval(async () => {
         try {
           const state = await api(`/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`);
           if (state.status === "Approved") {
             window.clearInterval(poll);
-            notice.textContent = `Approved. Your student ID is ${state.student_code}.`;
-            notice.className = "success approved";
-            button.textContent = "Registration approved";
+            showApprovalResult(state.student_code);
           } else if (state.status === "Rejected") {
             window.clearInterval(poll);
-            notice.textContent = "Registration rejected. Please contact your tutor.";
-            notice.className = "error";
-            button.disabled = false;
+            showRejectedResult();
           }
         } catch (_) {
           // Keep the waiting state during short network interruptions.
@@ -81,6 +73,22 @@ function registration() {
       button.disabled = false;
     }
   };
+}
+
+function renderApprovalStatus(requestId) {
+  app.innerHTML = `<main class="student-card status-screen"><div class="brand"><img src="/icon.svg" alt="TuitionLedger logo"><small>TuitionLedger Student</small></div><p class="eyebrow">REGISTRATION IN PROGRESS</p><div class="color-loader" aria-label="Checking approval status"></div><h1>You're all set.</h1><p class="intro">Your details are with your tutor. Keep this page open — we’ll update it automatically.</p><section class="status-steps" aria-label="Registration progress"><div class="status-step complete"><span>✓</span><div><strong>Details sent</strong><small>Your registration is safely received.</small></div></div><div class="status-step active"><span>2</span><div><strong>Tutor review</strong><small>Waiting for your tutor to approve this browser.</small></div></div><div class="status-step"><span>3</span><div><strong>Ready for attendance</strong><small>Your student ID appears here after approval.</small></div></div></section><p class="status-note">Request reference: ${String(requestId).slice(0, 8)}</p></main>`;
+}
+
+function showApprovalResult(studentCode) {
+  app.insertAdjacentHTML("beforeend", `<div class="success-popup" role="status" aria-live="polite"><div class="success-icon">✓</div><p class="eyebrow">APPROVAL COMPLETE</p><h2>You're ready to learn.</h2><p>Your browser is approved for attendance.</p><strong class="student-code">${studentCode || "Student ID ready"}</strong><button class="primary" id="approval-done">Continue</button></div>`);
+  document.querySelector(".status-step.active")?.classList.remove("active");
+  document.querySelectorAll(".status-step")[2]?.classList.add("complete");
+  document.querySelectorAll(".status-step")[2]?.querySelector("small").replaceChildren("You can now scan a class QR.");
+  document.querySelector("#approval-done").onclick = () => document.querySelector(".success-popup")?.remove();
+}
+
+function showRejectedResult() {
+  app.innerHTML = `<main class="student-card status-screen"><div class="brand"><img src="/icon.svg" alt="TuitionLedger logo"><small>TuitionLedger Student</small></div><p class="eyebrow">REGISTRATION UPDATE</p><div class="result-icon rejected">!</div><h1>Not approved yet.</h1><p class="intro">Your tutor could not approve this registration. Please contact them for the next step.</p></main>`;
 }
 
 function attendance() {

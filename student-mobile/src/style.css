@@ -132,6 +132,82 @@ button:disabled {
   width: 100%;
   margin-top: 15px;
 }
+.status-screen {
+  text-align: center;
+}
+.status-screen .brand {
+  text-align: left;
+}
+.color-loader {
+  width: 92px;
+  height: 92px;
+  margin: 12px auto 28px;
+  border-radius: 50%;
+  background: conic-gradient(#45c49a, #6fa8ff, #d6b878, #e784b9, #45c49a);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 0);
+  animation: approval-spin 1.7s linear infinite;
+}
+@keyframes approval-spin {
+  to { transform: rotate(360deg); }
+}
+.status-steps {
+  display: grid;
+  gap: 12px;
+  margin: 28px 0;
+  text-align: left;
+}
+.status-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #ffffff18;
+  border-radius: 16px;
+  background: #ffffff08;
+  opacity: .52;
+}
+.status-step.complete,
+.status-step.active { opacity: 1; }
+.status-step span,
+.result-icon,
+.success-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff18;
+  color: var(--gold);
+  font-weight: 800;
+}
+.status-step.complete span,
+.success-icon { background: var(--green); color: #08120f; }
+.status-step small { display: block; color: var(--muted); margin-top: 3px; }
+.status-note { color: #718179; font-size: 12px; }
+.success-popup {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  width: min( calc(100% - 32px), 390px );
+  padding: 28px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #ffffff2b;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #193d35ee, #10211fee);
+  box-shadow: 0 24px 80px #0009;
+  text-align: center;
+  z-index: 3;
+}
+.success-icon { width: 54px; height: 54px; margin: 0 auto 16px; font-size: 26px; }
+.success-popup h2 { margin: 5px 0 8px; }
+.success-popup p:not(.eyebrow) { color: var(--muted); }
+.student-code { display: block; margin: 18px 0; color: var(--gold); font-size: 24px; letter-spacing: .08em; }
+.success-popup .primary { width: 100%; }
+.result-icon.rejected { margin: 20px auto; background: #8d3e4e; color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .color-loader { animation: none; }
+}
 @media (max-width: 520px) {
   .student-card {
     padding-top: 28px;
