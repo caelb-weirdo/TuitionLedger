@@ -60,7 +60,9 @@ def database():
     url = os.getenv("SUPABASE_DB_URL") or os.getenv("DATABASE_URL")
     if not url:
         raise psycopg.OperationalError("Database is not configured")
-    return psycopg.connect(url, row_factory=dict_row)
+    # Supabase pooler connections require TLS in hosted environments. Keep
+    # this explicit so URLs without a query string work on Vercel as well.
+    return psycopg.connect(url, row_factory=dict_row, sslmode="require")
 
 
 def auth_required(handler):
@@ -762,7 +764,8 @@ def fee_whatsapp(fee_id):
 
 
 @app.errorhandler(psycopg.OperationalError)
-def db_error(_error):
+def db_error(error):
+    app.logger.exception("Database connection failed: %s", error)
     return response(message="The data service is temporarily unavailable.", status=503)
 
 

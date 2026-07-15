@@ -1,1 +1,142 @@
-:root{font-family:Inter,system-ui,sans-serif;color:#f7f5ef;background:#0b1110;line-height:1.5;--muted:#aab8b0;--green:#45c49a;--gold:#d6b878}*{box-sizing:border-box}body{margin:0;min-width:320px;background:radial-gradient(circle at 80% 0,#1f4b3e,#0b1110 62%)}.student-card{width:min(100% - 30px,560px);min-height:100vh;margin:auto;padding:36px 0 50px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:68px}.brand img{width:38px;height:38px}.brand small{color:var(--muted)}.eyebrow{color:var(--gold);font-size:11px;letter-spacing:.16em}.student-card h1{font-size:clamp(42px,12vw,66px);line-height:1;letter-spacing:-.07em;margin:12px 0}.intro{color:var(--muted);font-size:17px;margin-bottom:30px}form{display:grid;gap:16px}label,legend{font-weight:650;font-size:14px}input,select{display:block;width:100%;margin-top:7px;padding:14px;border:1px solid #ffffff28;border-radius:13px;background:#ffffff0b;color:#f7f5ef;font:inherit}select option{color:#111}fieldset{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;border:1px solid #ffffff22;border-radius:13px}.check-row{display:flex;align-items:center;gap:8px;font-weight:400}.check-row input{width:auto;margin:0;accent-color:var(--green)}button{border:0;border-radius:13px;padding:15px 18px;background:linear-gradient(100deg,#e7ece8,var(--gold),#248c71);color:#0b1110;font-weight:750;font:inherit;cursor:pointer}button:disabled{opacity:.55;cursor:wait}#notice{min-height:28px;color:var(--muted)}.success{color:var(--green)!important}.error{color:#ffb3bc!important}.inline-notice{padding:16px;border-radius:13px;background:#ffffff0b}.result{text-align:center}.result .brand{text-align:left}.result .primary{width:100%;margin-top:15px}@media(max-width:520px){.student-card{padding-top:28px}fieldset{grid-template-columns:1fr}}
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #f7f5ef;
+  background: #0b1110;
+  line-height: 1.5;
+  --muted: #aab8b0;
+  --green: #45c49a;
+  --gold: #d6b878;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(circle at 80% 0, #1f4b3e, #0b1110 62%);
+}
+.student-card {
+  width: min(100% - 30px, 560px);
+  min-height: 100vh;
+  margin: auto;
+  padding: 36px 0 50px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 68px;
+}
+.brand img {
+  width: 38px;
+  height: 38px;
+}
+.brand small {
+  color: var(--muted);
+}
+.eyebrow {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.student-card h1 {
+  font-size: clamp(42px, 12vw, 66px);
+  line-height: 1;
+  letter-spacing: -0.07em;
+  margin: 12px 0;
+}
+.intro {
+  color: var(--muted);
+  font-size: 17px;
+  margin-bottom: 30px;
+}
+form {
+  display: grid;
+  gap: 16px;
+}
+label,
+legend {
+  font-weight: 650;
+  font-size: 14px;
+}
+input,
+select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 14px;
+  border: 1px solid #ffffff28;
+  border-radius: 13px;
+  background: #ffffff0b;
+  color: #f7f5ef;
+  font: inherit;
+}
+select option {
+  color: #111;
+}
+fieldset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ffffff22;
+  border-radius: 13px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+.check-row input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--green);
+}
+button {
+  border: 0;
+  border-radius: 13px;
+  padding: 15px 18px;
+  background: linear-gradient(100deg, #e7ece8, var(--gold), #248c71);
+  color: #0b1110;
+  font-weight: 750;
+  font: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+#notice {
+  min-height: 28px;
+  color: var(--muted);
+}
+.success {
+  color: var(--green) !important;
+}
+.error {
+  color: #ffb3bc !important;
+}
+.inline-notice {
+  padding: 16px;
+  border-radius: 13px;
+  background: #ffffff0b;
+}
+.result {
+  text-align: center;
+}
+.result .brand {
+  text-align: left;
+}
+.result .primary {
+  width: 100%;
+  margin-top: 15px;
+}
+@media (max-width: 520px) {
+  .student-card {
+    padding-top: 28px;
+  }
+  fieldset {
+    grid-template-columns: 1fr;
+  }
+}

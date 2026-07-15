@@ -1,3 +1,26 @@
-const cardSkeleton=()=>'<article class="skeleton-card" aria-hidden="true"><span class="skeleton skeleton-pill"></span><span class="skeleton skeleton-title"></span><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line short"></span></article>';
-function renderSkeletons(){const root=document.querySelector('#app');if(!root)return;root.querySelectorAll('.list-grid').forEach(list=>{if(/^Loading/.test(list.textContent.trim())){list.setAttribute('aria-busy','true');list.innerHTML=cardSkeleton()+cardSkeleton()+cardSkeleton()}});root.querySelectorAll('#stats strong').forEach(value=>{if(!value.dataset.skeleton&&/[—–-]/.test(value.textContent)){value.dataset.skeleton='true';value.textContent='';value.classList.add('skeleton','skeleton-stat')}})}
-const root=document.querySelector('#app');if(root)new MutationObserver(renderSkeletons).observe(root,{childList:true,subtree:true});renderSkeletons();
+const cardSkeleton = () =>
+  '<article class="skeleton-card" aria-hidden="true"><span class="skeleton skeleton-pill"></span><span class="skeleton skeleton-title"></span><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line short"></span></article>';
+function renderSkeletons() {
+  const root = document.querySelector("#app");
+  if (!root) return;
+  root.querySelectorAll(".list-grid").forEach((list) => {
+    if (/^Loading/.test(list.textContent.trim())) {
+      list.setAttribute("aria-busy", "true");
+      list.innerHTML = cardSkeleton() + cardSkeleton() + cardSkeleton();
+    }
+  });
+  root.querySelectorAll("#stats strong").forEach((value) => {
+    if (!value.dataset.skeleton && /[—–-]/.test(value.textContent)) {
+      value.dataset.skeleton = "true";
+      value.textContent = "";
+      value.classList.add("skeleton", "skeleton-stat");
+    }
+  });
+}
+const root = document.querySelector("#app");
+if (root)
+  new MutationObserver(renderSkeletons).observe(root, {
+    childList: true,
+    subtree: true,
+  });
+renderSkeletons();

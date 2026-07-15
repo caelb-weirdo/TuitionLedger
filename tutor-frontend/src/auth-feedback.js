@@ -1,2 +1,23 @@
-function refreshAuthFeedback(){const notice=document.querySelector('#auth-notice');if(!notice)return;const text=(notice.textContent||'').trim();if(!text){notice.classList.remove('success','error');return}const success=/created|check your email|success|signed in|welcome/i.test(text);notice.classList.toggle('success',success);notice.classList.toggle('error',!success)}
-const app=document.querySelector('#app');if(app)new MutationObserver(refreshAuthFeedback).observe(app,{childList:true,subtree:true,characterData:true});window.addEventListener('hashchange',refreshAuthFeedback);refreshAuthFeedback();
+function refreshAuthFeedback() {
+  const notice = document.querySelector("#auth-notice");
+  if (!notice) return;
+  const text = (notice.textContent || "").trim();
+  if (!text) {
+    notice.classList.remove("success", "error");
+    return;
+  }
+  const success = /created|check your email|success|signed in|welcome/i.test(
+    text,
+  );
+  notice.classList.toggle("success", success);
+  notice.classList.toggle("error", !success);
+}
+const app = document.querySelector("#app");
+if (app)
+  new MutationObserver(refreshAuthFeedback).observe(app, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+window.addEventListener("hashchange", refreshAuthFeedback);
+refreshAuthFeedback();
