@@ -2,8 +2,6 @@ import json
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from functools import wraps
-from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import quote
 
@@ -11,7 +9,7 @@ import psycopg
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
-from psycopg.rows import dict_row
+from core import auth_call, auth_required, database, response, tutor_id
 
 load_dotenv()
 app = Flask(__name__)
@@ -43,91 +41,6 @@ origins = (
     else sorted(set(configured_origins + local_origins + deployed_origins))
 )
 CORS(app, origins=origins)
-
-
-def response(data=None, message=None, status=200):
-    body = {"success": status < 400}
-    if data is not None:
-        body["data"] = data
-    if message:
-        body["message"] = message
-    # psycopg returns UUID, datetime, time, and Decimal values.  Convert
-    # those database-native values at the API boundary so every endpoint
-    # always returns valid JSON instead of an opaque 500 response.
-    return jsonify(json.loads(json.dumps(body, default=str))), status
-
-
-def database():
-    url = os.getenv("SUPABASE_DB_URL") or os.getenv("DATABASE_URL")
-    if not url:
-        raise psycopg.OperationalError("Database is not configured")
-    # Supabase pooler connections require TLS in hosted environments. Keep
-    # this explicit so URLs without a query string work on Vercel as well.
-    return psycopg.connect(url, row_factory=dict_row, sslmode="require")
-
-
-def auth_required(handler):
-    @wraps(handler)
-    def wrapper(*args, **kwargs):
-        token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-        if not token:
-            return response(message="Please sign in first.", status=401)
-        url, key = (
-            os.getenv("SUPABASE_URL", "").rstrip("/"),
-            os.getenv("SUPABASE_PUBLISHABLE_KEY", ""),
-        )
-        try:
-            auth_request = Request(
-                f"{url}/auth/v1/user",
-                headers={"apikey": key, "Authorization": f"Bearer {token}"},
-            )
-            with urlopen(auth_request, timeout=10) as result:
-                g.user = json.loads(result.read().decode("utf-8"))
-            g.token = token
-            # Supabase Auth owns the identity, while our tutor table owns
-            # tutor-managed records through foreign keys.  Bootstrap that
-            # profile on the first authenticated request so a brand-new tutor
-            # can immediately create classes, students, and QR tokens.
-            metadata = g.user.get("user_metadata") or {}
-            with database() as db:
-                db.execute(
-                    """insert into tutors (id, full_name, email)
-                       values (%s, %s, %s)
-                       on conflict (id) do update set email = excluded.email""",
-                    (
-                        g.user["id"],
-                        str(metadata.get("full_name", "")).strip(),
-                        g.user.get("email", ""),
-                    ),
-                )
-                db.commit()
-            return handler(*args, **kwargs)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-            return response(
-                message="Your session has expired. Please sign in again.", status=401
-            )
-
-    return wrapper
-
-
-def tutor_id():
-    return g.user["id"]
-
-
-def auth_call(path, payload):
-    url, key = (
-        os.getenv("SUPABASE_URL", "").rstrip("/"),
-        os.getenv("SUPABASE_PUBLISHABLE_KEY", ""),
-    )
-    body = json.dumps(payload).encode()
-    req = Request(
-        f"{url}{path}",
-        data=body,
-        headers={"apikey": key, "Content-Type": "application/json"},
-        method="POST",
-    )
-    with urlopen(req, timeout=10) as result:
-        return json.loads(result.read().decode())
 
 
 @app.get("/health")

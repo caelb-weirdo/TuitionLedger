@@ -1,0 +1,150 @@
+/* Final Frosted Touch palette supplied for the remodel. */
+:root {
+  --bg: #f8fbff;
+  --glass: rgba(255, 255, 255, 0.65);
+  --glass-blue: rgba(234, 244, 255, 0.75);
+  --border: #c9e6ff;
+  --primary: #3ba7ff;
+  --text: #102a43;
+  --muted: #5b708a;
+  --success: #4fd1c5;
+  --warning: #f6c85f;
+  --danger: #ff6b6b;
+}
+body {
+  background:
+    radial-gradient(900px 520px at 88% -12%, #c9e6ff 0%, transparent 58%),
+    radial-gradient(760px 480px at -10% 25%, #e7f5ff 0%, transparent 62%),
+    var(--bg) !important;
+  color: var(--text) !important;
+}
+.workspace {
+  background: linear-gradient(180deg, #ffffff80 0%, #f8fbff00 44%) !important;
+}
+.site-header,
+.workspace-header {
+  background: #ffffffb8 !important;
+  border-color: #c9e6ff !important;
+  color: #102a43 !important;
+}
+.site-header nav a:not(.button),
+.app-shell nav a,
+.side-label,
+.side-signout {
+  color: #5b708a !important;
+}
+.site-header nav a:not(.button):hover,
+.app-shell nav a:hover,
+.app-shell nav a.active {
+  background: #eaf4ff !important;
+  color: #102a43 !important;
+}
+.app-shell aside {
+  background: #ffffffaa !important;
+  border-color: #c9e6ff !important;
+}
+.auth-card,
+.panel,
+.record-card,
+.form-card,
+.qr-card,
+.summary-card,
+.feature-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(234, 244, 255, 0.48)
+  ) !important;
+  border-color: #c9e6ff !important;
+  box-shadow:
+    0 24px 60px rgba(54, 106, 146, 0.16),
+    0 1px 0 #fff inset !important;
+  color: #102a43 !important;
+}
+.button {
+  background: linear-gradient(135deg, #3ba7ff, #62b9ff) !important;
+  color: #fff !important;
+  border-color: #3ba7ff !important;
+  box-shadow:
+    0 12px 26px rgba(59, 167, 255, 0.28),
+    0 1px 0 #fff8 inset !important;
+}
+.button:hover {
+  background: linear-gradient(135deg, #2698f2, #54b1fa) !important;
+  box-shadow:
+    0 16px 32px rgba(59, 167, 255, 0.34),
+    0 1px 0 #fff8 inset !important;
+}
+.button:focus-visible {
+  outline-color: #102a43 !important;
+}
+.button-ghost {
+  background: #ffffff99 !important;
+  color: #102a43 !important;
+  border-color: #c9e6ff !important;
+  box-shadow: 0 8px 20px rgba(70, 125, 164, 0.12) !important;
+}
+.button-ghost:hover {
+  background: #eaf4ff !important;
+  border-color: #3ba7ff !important;
+}
+.danger {
+  background: #ff6b6b !important;
+  border-color: #ff6b6b !important;
+  color: #fff !important;
+}
+.auth-form input,
+.grid-form input,
+.grid-form select,
+.data-toolbar input {
+  background: #ffffffb8 !important;
+  border-color: #c9e6ff !important;
+  color: #102a43 !important;
+}
+.auth-form input:focus,
+.grid-form input:focus,
+.grid-form select:focus,
+.data-toolbar input:focus {
+  border-color: #3ba7ff !important;
+  outline: 3px solid #3ba7ff33 !important;
+}
+.auth-card .muted,
+.muted,
+.record-card p,
+.feature-card p,
+.flow p {
+  color: #5b708a !important;
+}
+.kicker,
+.flow span {
+  color: #2388d9 !important;
+}
+.summary-card::after {
+  background: #4fd1c522 !important;
+}
+.dashboard-grid .summary-card:nth-child(4)::after {
+  background: #f6c85f44 !important;
+}
+.status-pill {
+  background: #eaf4ffcc !important;
+  border-color: #c9e6ff !important;
+  color: #102a43 !important;
+}
+.inline-notice.success {
+  background: #4fd1c522 !important;
+  border-color: #4fd1c5 !important;
+  color: #176b67 !important;
+}
+.inline-notice.error {
+  background: #ff6b6b1c !important;
+  border-color: #ff6b6b !important;
+  color: #a63838 !important;
+}
+.form-notice {
+  color: #176b67 !important;
+}
+footer {
+  color: #5b708a !important;
+  border-color: #c9e6ff !important;
+}
+

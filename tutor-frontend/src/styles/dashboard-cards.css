@@ -1,0 +1,119 @@
+/* Dashboard cards: premium finance-card composition, adapted for register metrics. */
+.dashboard-bento .summary-card {
+  min-height: 164px;
+  padding: 24px 25px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 25px !important;
+  transform: rotate(-1.2deg);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.dashboard-bento .summary-card:nth-child(2) {
+  transform: rotate(1.4deg);
+}
+.dashboard-bento .summary-card:nth-child(3) {
+  transform: rotate(-0.7deg);
+}
+.dashboard-bento .summary-card:nth-child(4) {
+  transform: rotate(1deg);
+}
+.dashboard-bento .summary-card:hover {
+  transform: translateY(-5px) rotate(0deg);
+  box-shadow:
+    0 32px 70px #6574b544,
+    0 1px 0 #fff inset !important;
+}
+.dashboard-bento .summary-card::before {
+  content: "TL";
+  position: absolute;
+  right: 24px;
+  top: 20px;
+  width: 34px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffffaa;
+  border-radius: 8px;
+  background: #ffffff70;
+  color: #5667ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 10px #6574b522;
+  z-index: 1;
+}
+.dashboard-bento .summary-card::after {
+  width: 190px;
+  height: 120px;
+  right: -54px;
+  bottom: -66px;
+  filter: blur(6px);
+  opacity: 0.9;
+}
+.dashboard-bento .summary-card:nth-child(1) {
+  background: linear-gradient(
+    135deg,
+    #fff3f9d9,
+    #f6c0d799 58%,
+    #ed73b866
+  ) !important;
+}
+.dashboard-bento .summary-card:nth-child(2) {
+  background: linear-gradient(
+    135deg,
+    #f5f3ffd9,
+    #c9c6f399 58%,
+    #8d85ed66
+  ) !important;
+}
+.dashboard-bento .summary-card:nth-child(3) {
+  background: linear-gradient(
+    135deg,
+    #f5ffe9d9,
+    #d6f39d99 58%,
+    #65dc7b66
+  ) !important;
+}
+.dashboard-bento .summary-card:nth-child(4) {
+  background: linear-gradient(
+    135deg,
+    #eafcffd9,
+    #a8e7e899 58%,
+    #35c4d866
+  ) !important;
+}
+.dashboard-bento .summary-card small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4f5b78 !important;
+}
+.dashboard-bento .summary-card strong {
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  color: #151b4b !important;
+  position: relative;
+  z-index: 1;
+}
+.dashboard-bento > .panel {
+  border-radius: 25px !important;
+  background: linear-gradient(
+    145deg,
+    #ffffffd9,
+    #f0f4ffad 58%,
+    #e9d9f5a8
+  ) !important;
+}
+@media (max-width: 900px) {
+  .dashboard-bento .summary-card {
+    transform: none;
+  }
+  .dashboard-bento .summary-card:hover {
+    transform: translateY(-4px);
+  }
+}
+
