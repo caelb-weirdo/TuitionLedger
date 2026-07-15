@@ -1,14 +1,8 @@
 import "./style.css";
 import "./logo.css";
+import { api } from "./core/api.js";
 
 const app = document.querySelector("#app");
-const localHost =
-  location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const apiUrl =
-  import.meta.env.VITE_API_BASE_URL ||
-  (localHost
-    ? "http://localhost:8000"
-    : "https://tuitionledger-backend.vercel.app");
 const browserId =
   localStorage.getItem("tuitionledger-browser") || crypto.randomUUID();
 localStorage.setItem("tuitionledger-browser", browserId);
@@ -16,17 +10,6 @@ const params = new URLSearchParams(location.search);
 const token = params.get("registration_token");
 const attendanceToken = params.get("attendance_token");
 const subjects = ["Maths", "Science", "English", "Tamil", "History"];
-const api = async (path, options = {}) => {
-  const r = await fetch(`${apiUrl}${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-  });
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok || body.success === false)
-    throw new Error(body.message || "Connection problem. Please try again.");
-  return body.data;
-};
-
 function registration() {
   app.innerHTML = `<main class="student-card"><div class="brand"><img src="/icon.svg" alt="TuitionLedger logo"><small>TuitionLedger Student</small></div><p class="eyebrow">STUDENT REGISTRATION</p><h1>Register this browser.</h1><p class="intro">Your tutor will review these details before attendance is enabled.</p>${token ? `<form id="registration"><label>Full name<input name="full_name" autocomplete="name" required placeholder="Enus Caleb"></label><label>Student phone<input name="student_phone" inputmode="tel" required placeholder="0789282834"></label><label>Guardian name<input name="guardian_name" required></label><label>Guardian WhatsApp<input name="guardian_whatsapp" inputmode="tel" required></label><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><fieldset><legend>Requested subjects</legend>${subjects.map((s) => `<label class="check-row"><input type="checkbox" name="requested_classes" value="${s}"> ${s}</label>`).join("")}</fieldset><p id="notice" role="status"></p><button class="primary">Request approval</button></form>` : `<p class="inline-notice error">Open this page from the registration QR provided by your tutor.</p>`}</main>`;
   const form = document.querySelector("#registration");
@@ -55,7 +38,9 @@ function registration() {
       renderApprovalStatus(request.id);
       const poll = window.setInterval(async () => {
         try {
-          const state = await api(`/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`);
+          const state = await api(
+            `/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`,
+          );
           if (state.status === "Approved") {
             window.clearInterval(poll);
             showApprovalResult(state.student_code);
@@ -80,11 +65,18 @@ function renderApprovalStatus(requestId) {
 }
 
 function showApprovalResult(studentCode) {
-  app.insertAdjacentHTML("beforeend", `<div class="success-popup" role="status" aria-live="polite"><div class="success-icon">✓</div><p class="eyebrow">APPROVAL COMPLETE</p><h2>You're ready to learn.</h2><p>Your browser is approved for attendance.</p><strong class="student-code">${studentCode || "Student ID ready"}</strong><button class="primary" id="approval-done">Continue</button></div>`);
+  app.insertAdjacentHTML(
+    "beforeend",
+    `<div class="success-popup" role="status" aria-live="polite"><div class="success-icon">✓</div><p class="eyebrow">APPROVAL COMPLETE</p><h2>You're ready to learn.</h2><p>Your browser is approved for attendance.</p><strong class="student-code">${studentCode || "Student ID ready"}</strong><button class="primary" id="approval-done">Continue</button></div>`,
+  );
   document.querySelector(".status-step.active")?.classList.remove("active");
   document.querySelectorAll(".status-step")[2]?.classList.add("complete");
-  document.querySelectorAll(".status-step")[2]?.querySelector("small").replaceChildren("You can now scan a class QR.");
-  document.querySelector("#approval-done").onclick = () => document.querySelector(".success-popup")?.remove();
+  document
+    .querySelectorAll(".status-step")[2]
+    ?.querySelector("small")
+    .replaceChildren("You can now scan a class QR.");
+  document.querySelector("#approval-done").onclick = () =>
+    document.querySelector(".success-popup")?.remove();
 }
 
 function showRejectedResult() {

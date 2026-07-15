@@ -1,4 +1,4 @@
-import { app, logo } from '../core/config.js';
+import { app, logo } from "../core/config.js";
 export function shell(page, title, body) {
   const nav = [
     ["dashboard", "Dashboard"],

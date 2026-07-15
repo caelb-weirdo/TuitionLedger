@@ -1,5 +1,5 @@
-import { api, esc, msg } from '../core/api.js';
-import { shell } from './layout.js';
+import { api, esc, msg } from "../core/api.js";
+import { shell } from "./layout.js";
 export async function feesPage() {
   shell(
     "fees",

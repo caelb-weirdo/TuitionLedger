@@ -1,7 +1,7 @@
-import QRCode from 'qrcode';
-import { api, esc, msg } from '../core/api.js';
-import { studentUrl } from '../core/config.js';
-import { shell } from './layout.js';
+import QRCode from "qrcode";
+import { api, esc, msg } from "../core/api.js";
+import { studentUrl } from "../core/config.js";
+import { shell } from "./layout.js";
 async function attendancePage() {
   shell(
     "attendance",
@@ -111,18 +111,20 @@ export async function attendanceWorkspacePage() {
   };
   try {
     const list = await api("/api/classes");
-    if (!Array.isArray(list)) throw Error("Classes could not be loaded. Refresh and try again.");
+    if (!Array.isArray(list))
+      throw Error("Classes could not be loaded. Refresh and try again.");
     classSelect.innerHTML = list.length
       ? list
-      .map(
-        (x) =>
-          `<option value="${x.id}">${esc(x.grade)} · ${esc(x.subject)} · ${esc(x.class_name)}</option>`,
-      )
-      .join("")
+          .map(
+            (x) =>
+              `<option value="${x.id}">${esc(x.grade)} · ${esc(x.subject)} · ${esc(x.class_name)}</option>`,
+          )
+          .join("")
       : '<option value="">No classes available</option>';
     classSelect.disabled = !list.length;
     attendanceForm.querySelector("button").disabled = !list.length;
-    attendanceForm.querySelector("button").textContent = "Generate attendance QR";
+    attendanceForm.querySelector("button").textContent =
+      "Generate attendance QR";
     attendanceNotice.textContent = list.length
       ? `${list.length} class${list.length === 1 ? "" : "es"} loaded.`
       : "Create a class first, then return here to open attendance.";

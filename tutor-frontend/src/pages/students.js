@@ -1,7 +1,7 @@
-import QRCode from 'qrcode';
-import { api, esc, msg } from '../core/api.js';
-import { app, subjects, days } from '../core/config.js';
-import { shell } from './layout.js';
+import QRCode from "qrcode";
+import { api, esc, msg } from "../core/api.js";
+import { app, subjects, days } from "../core/config.js";
+import { shell } from "./layout.js";
 function studentForm(id, existing) {
   const host = document.querySelector("#student-content");
   host.insertAdjacentHTML(

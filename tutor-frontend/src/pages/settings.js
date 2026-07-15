@@ -1,6 +1,6 @@
-import { api } from '../core/api.js';
-import { app } from '../core/config.js';
-import { shell } from './layout.js';
+import { api } from "../core/api.js";
+import { app } from "../core/config.js";
+import { shell } from "./layout.js";
 export function settingsPage() {
   shell(
     "settings",

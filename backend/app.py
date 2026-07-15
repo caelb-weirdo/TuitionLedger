@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import quote
 
@@ -23,11 +24,8 @@ configured_origins = [
 # Keep local development origins while allowing the deployed tutor and student
 # clients to call this API from the browser.
 deployed_origins = [
-    "https://tuitionledger-frontend.vercel.app",
-    "https://tuitonledger-frontend.vercel.app",
-    "https://student-mobile-pwa.vercel.app",
-    "https://tuitonledger-frontend-weirdos.vercel.app",
-    "https://student-mobile-pwa-weirdos.vercel.app",
+    os.getenv("TUTOR_APP_URL", "https://tuitionledger-frontend.vercel.app"),
+    os.getenv("STUDENT_APP_URL", "https://student-mobile-pwa.vercel.app"),
 ]
 local_origins = [
     "http://localhost:5173",
@@ -61,7 +59,8 @@ def signup():
         )
     try:
         redirect_url = os.getenv(
-            "AUTH_REDIRECT_URL", "https://tuitonledger-frontend.vercel.app/#login"
+            "AUTH_REDIRECT_URL",
+            f"{os.getenv('TUTOR_APP_URL', 'https://tuitionledger-frontend.vercel.app')}/#login",
         )
         result = auth_call(
             f"/auth/v1/signup?redirect_to={quote(redirect_url, safe='')}",

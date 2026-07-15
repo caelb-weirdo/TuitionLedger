@@ -48,7 +48,10 @@ def auth_required(handler):
         url = os.getenv("SUPABASE_URL", "").rstrip("/")
         key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
         try:
-            auth_request = Request(f"{url}/auth/v1/user", headers={"apikey": key, "Authorization": f"Bearer {token}"})
+            auth_request = Request(
+                f"{url}/auth/v1/user",
+                headers={"apikey": key, "Authorization": f"Bearer {token}"},
+            )
             with _auth_urlopen(auth_request, timeout=10) as result:
                 g.user = json.loads(result.read().decode("utf-8"))
             g.token = token
@@ -58,12 +61,18 @@ def auth_required(handler):
                     """insert into tutors (id, full_name, email)
                        values (%s, %s, %s)
                        on conflict (id) do update set email = excluded.email""",
-                    (g.user["id"], str(metadata.get("full_name", "")).strip(), g.user.get("email", "")),
+                    (
+                        g.user["id"],
+                        str(metadata.get("full_name", "")).strip(),
+                        g.user.get("email", ""),
+                    ),
                 )
                 db.commit()
             return handler(*args, **kwargs)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-            return response(message="Your session has expired. Please sign in again.", status=401)
+            return response(
+                message="Your session has expired. Please sign in again.", status=401
+            )
 
     return wrapper
 
@@ -75,6 +84,11 @@ def tutor_id():
 def auth_call(path, payload):
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
     key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
-    req = Request(f"{url}{path}", data=json.dumps(payload).encode(), headers={"apikey": key, "Content-Type": "application/json"}, method="POST")
+    req = Request(
+        f"{url}{path}",
+        data=json.dumps(payload).encode(),
+        headers={"apikey": key, "Content-Type": "application/json"},
+        method="POST",
+    )
     with urlopen(req, timeout=10) as result:
         return json.loads(result.read().decode())
