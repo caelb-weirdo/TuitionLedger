@@ -109,7 +109,6 @@ TuitionLedger/
 │   ├── api/index.py         # Vercel adapter
 │   └── requirements.txt
 ├── supabase/schema.sql      # Tables, constraints, indexes and RLS policies
-├── design-system/           # Visual tokens and design notes
 ├── .gitignore
 └── README.md
 ```
