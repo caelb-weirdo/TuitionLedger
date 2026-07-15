@@ -423,10 +423,15 @@ async function feesPage() {
   shell(
     "fees",
     "Fees",
-    `<section class="page-intro"><p class="kicker">Monthly ledger</p><h2>Mark paid and remind clearly.</h2></section><article class="form-card"><form id="fee-form" class="inline-form"><label>Month<input type="month" name="month" required></label><button class="button">Generate fee rows</button></form></article><section id="fee-list" class="list-grid">Loading fees...</section>`,
+    `<section class="page-intro"><p class="kicker">Monthly ledger</p><h2>Mark paid and remind clearly.</h2><p class="muted">Generate a month after enrolling students to create the fee rows.</p></section><article class="form-card"><form id="fee-form" class="inline-form"><label>Month<input type="month" name="month" required></label><button class="button">Generate fee rows</button></form><p id="fee-notice" class="form-notice" aria-live="polite"></p></article><section id="fee-list" class="list-grid" aria-live="polite">Loading fee records…</section>`,
   );
   document.querySelector("#fee-form").onsubmit = async (e) => {
     e.preventDefault();
+    const button = e.currentTarget.querySelector("button");
+    const notice = document.querySelector("#fee-notice");
+    button.disabled = true;
+    button.textContent = "Generating…";
+    notice.textContent = "Creating fee rows for the selected month.";
     try {
       await api("/api/fees/generate", {
         method: "POST",
@@ -434,6 +439,10 @@ async function feesPage() {
       });
       feesPage();
     } catch (x) {
+      button.disabled = false;
+      button.textContent = "Generate fee rows";
+      notice.textContent = x.message;
+      notice.className = "form-notice error";
       e.currentTarget.insertAdjacentHTML(
         "beforebegin",
         msg(x.message, "error"),
@@ -450,18 +459,27 @@ async function feesPage() {
             `<article class="record-card"><span class="status-pill">${esc(x.status)}</span><h3>${esc(x.full_name)}</h3><p>${esc(x.class_name)} · ${esc(x.month)}</p><strong>Rs. ${esc(x.amount)}</strong><div class="card-actions"><button class="button button-small" data-paid="${x.id}">${x.status === "Paid" ? "Mark unpaid" : "Mark paid"}</button>${x.status === "Unpaid" ? `<button class="button button-small button-ghost" data-wa="${x.id}">WhatsApp reminder</button>` : ""}</div></article>`,
         )
         .join("") ||
-      `<article class="record-card"><h3>No fee rows yet</h3><p>Generate a month after enrolling students.</p></article>`;
+      `<article class="record-card"><h3>No fee rows yet</h3><p>Enroll at least one approved student in a class, then generate a month.</p></article>`;
     host.querySelectorAll("[data-paid]").forEach(
       (b) =>
         (b.onclick = async () => {
           const x = list.find((v) => v.id === b.dataset.paid);
-          await api(`/api/fees/${b.dataset.paid}`, {
-            method: "PUT",
-            body: JSON.stringify({
-              status: x.status === "Paid" ? "Unpaid" : "Paid",
-            }),
-          });
-          feesPage();
+          const previous = b.textContent;
+          b.disabled = true;
+          b.textContent = "Saving…";
+          try {
+            await api(`/api/fees/${b.dataset.paid}`, {
+              method: "PUT",
+              body: JSON.stringify({
+                status: x.status === "Paid" ? "Unpaid" : "Paid",
+              }),
+            });
+            feesPage();
+          } catch (e) {
+            b.disabled = false;
+            b.textContent = previous;
+            host.insertAdjacentHTML("afterbegin", msg(e.message, "error"));
+          }
         }),
     );
     host.querySelectorAll("[data-wa]").forEach(
@@ -510,9 +528,12 @@ async function attendanceWorkspacePage() {
   shell(
     "attendance",
     "Attendance",
-    `<section class="page-intro"><p class="kicker">Attendance register</p><h2>Choose a class, then record the room.</h2><p class="muted">Use the QR for normal student scanning, or mark a student manually when their phone cannot scan.</p></section><article class="form-card"><form id="attendance-form" class="grid-form"><label>Class<select name="class_id" id="attendance-class" required></select></label><label>Date<input type="date" name="attendance_date" id="attendance-date" required></label><label>QR duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button">Generate attendance QR</button></form></article><section class="attendance-layout"><article class="panel"><div class="section-heading"><p class="kicker">Enrolled students</p><h3 id="roster-title">Select a class</h3></div><div id="attendance-roster" class="attendance-roster"><p class="muted">Choose a class to load its enrolled students.</p></div></article><article id="attendance-result" class="panel"><p class="muted">The QR will appear here after you generate a session.</p></article></section>`,
+    `<section class="page-intro"><p class="kicker">Attendance register</p><h2>Choose a class, then record the room.</h2><p class="muted">Use the QR for normal student scanning, or mark a student manually when their phone cannot scan.</p></section><article class="form-card"><form id="attendance-form" class="grid-form"><label>Class<select name="class_id" id="attendance-class" required disabled><option value="">Loading classes…</option></select></label><label>Date<input type="date" name="attendance_date" id="attendance-date" required></label><label>QR duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button" disabled>Loading classes…</button></form><p id="attendance-notice" class="form-notice" aria-live="polite"></p></article><section class="attendance-layout"><article class="panel"><div class="section-heading"><p class="kicker">Enrolled students</p><h3 id="roster-title">Select a class</h3></div><div id="attendance-roster" class="attendance-roster"><p class="muted">Loading your classes…</p></div></article><article id="attendance-result" class="panel"><p class="muted">The QR will appear here after you generate a session.</p></article></section>`,
   );
   const dateInput = document.querySelector("#attendance-date");
+  const classSelect = document.querySelector("#attendance-class");
+  const attendanceForm = document.querySelector("#attendance-form");
+  const attendanceNotice = document.querySelector("#attendance-notice");
   dateInput.value = new Date().toISOString().slice(0, 10);
   let currentSession = null;
   let enrolled = [];
@@ -564,12 +585,21 @@ async function attendanceWorkspacePage() {
   };
   try {
     const list = await api("/api/classes");
-    document.querySelector("#attendance-class").innerHTML = list
+    if (!Array.isArray(list)) throw Error("Classes could not be loaded. Refresh and try again.");
+    classSelect.innerHTML = list.length
+      ? list
       .map(
         (x) =>
           `<option value="${x.id}">${esc(x.grade)} · ${esc(x.subject)} · ${esc(x.class_name)}</option>`,
       )
-      .join("");
+      .join("")
+      : '<option value="">No classes available</option>';
+    classSelect.disabled = !list.length;
+    attendanceForm.querySelector("button").disabled = !list.length;
+    attendanceForm.querySelector("button").textContent = "Generate attendance QR";
+    attendanceNotice.textContent = list.length
+      ? `${list.length} class${list.length === 1 ? "" : "es"} loaded.`
+      : "Create a class first, then return here to open attendance.";
     const loadRoster = async () => {
       const classId = document.querySelector("#attendance-class").value;
       if (!classId) return;
@@ -592,6 +622,11 @@ async function attendanceWorkspacePage() {
     };
     await loadRoster();
   } catch (error) {
+    classSelect.innerHTML = '<option value="">Unable to load classes</option>';
+    classSelect.disabled = true;
+    attendanceForm.querySelector("button").disabled = true;
+    attendanceNotice.textContent = error.message;
+    attendanceNotice.className = "form-notice error";
     roster.innerHTML = msg(error.message, "error");
   }
   document.querySelector("#attendance-form").onsubmit = async (event) => {
