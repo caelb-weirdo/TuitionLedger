@@ -615,7 +615,7 @@ def manual_attendance():
         )
     with database() as db:
         row = db.execute(
-            "insert into attendance_records(session_id,class_id,student_id,attendance_date,status,marked_method) select s.id,s.class_id,%s,s.attendance_date,%s,'Manual' from attendance_sessions s where s.id=%s and s.class_id=%s and s.tutor_id=%s and s.status='Active' on conflict(session_id,student_id) do update set status=excluded.status,marked_method='Manual',marked_at=now() returning *",
+            "insert into attendance_records(session_id,class_id,student_id,attendance_date,status,marked_method) select s.id,s.class_id,%s,s.attendance_date,%s,'Manual' from attendance_sessions s where s.id=%s and s.class_id=%s and s.tutor_id=%s on conflict(session_id,student_id) do update set status=excluded.status,marked_method='Manual',marked_at=now() returning *",
             (
                 data.get("student_id"),
                 data.get("status"),

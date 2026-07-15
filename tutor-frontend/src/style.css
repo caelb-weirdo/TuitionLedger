@@ -561,6 +561,134 @@ footer {
   padding: 9px;
   font-size: 12px;
 }
+[hidden] {
+  display: none !important;
+}
+.class-workspaces {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+.class-workspace {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #ffffff08;
+}
+.class-workspace-header,
+.class-workspace-grid,
+.dashboard-overview,
+.attendance-history-row,
+.class-roster-row,
+.overview-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+.class-workspace-header h3 {
+  margin: 10px 0 4px;
+}
+.class-workspace-header p,
+.class-roster-row small,
+.attendance-history-row small,
+.overview-row small {
+  color: var(--muted);
+}
+.class-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: start;
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.class-workspace-grid > section {
+  min-width: 0;
+}
+.class-roster,
+.attendance-history,
+.dashboard-overview {
+  display: grid;
+  gap: 10px;
+}
+.class-roster-row,
+.attendance-history-row,
+.overview-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.class-roster-row span,
+.attendance-history-row > div:first-child,
+.overview-row span {
+  display: grid;
+  gap: 3px;
+}
+.session-desk {
+  padding: 18px;
+  border: 1px solid #d6b87844;
+  border-radius: 16px;
+  background: #d6b8780a;
+}
+.session-form {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+.session-form label {
+  flex: 1;
+}
+.session-form select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+}
+.session-result {
+  margin-top: 12px;
+}
+.qr-card.compact {
+  padding: 14px;
+  text-align: center;
+}
+.qr-card.compact img {
+  width: 190px;
+}
+.read-only-enrolment {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.read-only-enrolment small {
+  color: var(--muted);
+}
+.read-only-enrolment p {
+  margin: 5px 0 0;
+}
+.dashboard-overview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.overview-row {
+  color: inherit;
+}
+.attendance-history-row .attendance-status {
+  min-width: 74px;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .class-workspace-header,
+  .attendance-history-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .class-workspace-grid,
+  .dashboard-overview {
+    grid-template-columns: 1fr;
+  }
+}
 .auth-shell {
   position: relative;
   overflow: hidden;
