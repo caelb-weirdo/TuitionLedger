@@ -33,7 +33,13 @@ def student_payload(data):
 def students():
     with database() as db:
         rows = db.execute(
-            "select * from students where tutor_id=%s and status='Active' order by created_at desc",
+            """select s.*,
+            coalesce((
+              select json_agg(json_build_object('id',c.id,'class_name',c.class_name) order by c.class_name)
+              from class_students cs join classes c on c.id=cs.class_id
+              where cs.student_id=s.id and cs.status='Active' and c.status='Active'
+            ),'[]'::json) as enrolled_classes
+            from students s where s.tutor_id=%s and s.status='Active' order by s.created_at desc""",
             (tutor_id(),),
         ).fetchall()
     return response([dict(row) for row in rows])

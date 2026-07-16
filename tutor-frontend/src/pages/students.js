@@ -88,26 +88,11 @@ export async function studentsPage() {
   };
 
   try {
-    const [students, requests, browserRequests, classes] = await Promise.all([
+    const [students, requests, browserRequests] = await Promise.all([
       api("/api/students"),
       api("/api/registration-requests"),
       api("/api/browser-requests"),
-      api("/api/classes"),
     ]);
-    const rosters = new Map(
-      await Promise.all(
-        classes.map(async (classItem) => [
-          classItem.id,
-          await api(`/api/classes/${classItem.id}/students`),
-        ]),
-      ),
-    );
-    const classesFor = (studentId) =>
-      classes.filter((classItem) =>
-        (rosters.get(classItem.id) || []).some(
-          (student) => student.id === studentId,
-        ),
-      );
     const pending = requests
       .filter((request) => request.status === "Pending")
       .map(
@@ -117,7 +102,7 @@ export async function studentsPage() {
       .join("");
     const approved = students
       .map((student) => {
-        const enrolled = classesFor(student.id);
+        const enrolled = student.enrolled_classes || [];
         return `<article class="record-card"><span class="status-pill">${esc(student.student_code)}</span><h3>${esc(student.full_name)}</h3><p>${esc(student.grade)} · ${esc(student.student_phone)}</p><strong>${esc(student.browser_status)}</strong><div class="read-only-enrolment"><small>Enrolled classes</small><p>${enrolled.map((classItem) => esc(classItem.class_name)).join(" · ") || "Not enrolled"}</p></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${student.id}">Edit</button><button class="button button-small button-ghost" data-reset="${student.id}">Reset browser</button><button class="button button-small danger" data-delete="${student.id}">Delete</button></div></article>`;
       })
       .join("");
