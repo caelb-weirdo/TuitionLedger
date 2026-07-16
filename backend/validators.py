@@ -19,7 +19,9 @@ class ValidationError(ValueError):
 def required_text(value, label, minimum=1, maximum=160):
     text = str(value or "").strip()
     if not minimum <= len(text) <= maximum:
-        raise ValidationError(f"{label} must be between {minimum} and {maximum} characters.")
+        raise ValidationError(
+            f"{label} must be between {minimum} and {maximum} characters."
+        )
     return text
 
 
@@ -153,4 +155,3 @@ def fee_status(value):
 
 def manual_reason(value):
     return required_text(value, "Correction reason", 3, 300)
-

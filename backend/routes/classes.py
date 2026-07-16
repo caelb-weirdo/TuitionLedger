@@ -5,7 +5,7 @@ from core import auth_required, database, response, tutor_id
 from validators import (
     grade,
     money,
-    person_name,
+    required_text,
     subject,
     time_range,
     uuid_value,
@@ -20,7 +20,7 @@ def class_payload(data):
     return (
         grade(data.get("grade")),
         subject(data.get("subject")),
-        person_name(data.get("class_name"), "Class name"),
+        required_text(data.get("class_name"), "Class name", 2, 120),
         weekday(data.get("day")),
         start,
         end,

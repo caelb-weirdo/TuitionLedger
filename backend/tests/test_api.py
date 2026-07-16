@@ -10,6 +10,7 @@ import app as api_app
 REQUEST_ID = "550e8400-e29b-41d4-a716-446655440001"
 FEE_ID = "550e8400-e29b-41d4-a716-446655440002"
 BROWSER_ID = "550e8400-e29b-41d4-a716-446655440003"
+QR_TOKEN = "valid_attendance_token_1234567890"
 
 
 class FakeResponse:
@@ -103,7 +104,7 @@ def test_expired_qr_is_rejected(client, monkeypatch):
     )
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "expired", "browser_id": BROWSER_ID}
+        "/api/attendance/scan", json={"qr_token": QR_TOKEN, "browser_id": BROWSER_ID}
     )
     assert result.status_code == 410
     assert result.json["message"] == "QR code expired."
@@ -127,7 +128,7 @@ def test_wrong_browser_is_rejected(client, monkeypatch):
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": BROWSER_ID}
+        "/api/attendance/scan", json={"qr_token": QR_TOKEN, "browser_id": BROWSER_ID}
     )
     assert result.status_code == 403
     assert result.json["message"] == "This browser is not approved for attendance."
@@ -159,7 +160,7 @@ def test_duplicate_attendance_returns_already_marked(client, monkeypatch):
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": BROWSER_ID}
+        "/api/attendance/scan", json={"qr_token": QR_TOKEN, "browser_id": BROWSER_ID}
     )
     assert result.status_code == 200
     assert result.json["data"]["result"] == "Already Marked"

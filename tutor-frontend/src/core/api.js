@@ -59,7 +59,7 @@ export async function api(path, options = {}, retried = false) {
     clearAuth();
     location.hash = "#login";
   }
-  if (!response.ok || body.success === false)
+  if (!response.ok || body?.success === false)
     throw Error(body?.message || "That action could not be completed.");
   return body.data;
 }

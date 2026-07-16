@@ -9,6 +9,7 @@ from validators import (
     browser_id,
     grade,
     person_name,
+    secure_token,
     sri_lankan_phone,
     student_code,
     uuid_value,
@@ -136,7 +137,7 @@ def registration_qr():
 @student_routes.post("/api/register-student")
 def register_student():
     data = request.get_json(silent=True) or {}
-    token = str(data.get("registration_token", "")).strip()
+    token = secure_token(data.get("registration_token"), "Registration token")
     browser = browser_id(data.get("browser_id"))
     values = student_payload(data)
     with database() as db:

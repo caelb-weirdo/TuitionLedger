@@ -9,6 +9,7 @@ from validators import (
     browser_id,
     manual_reason,
     qr_duration,
+    secure_token,
     uuid_value,
 )
 
@@ -101,7 +102,7 @@ def attendance_history(class_id):
 @attendance_routes.post("/api/attendance/scan")
 def scan():
     data = request.get_json(silent=True) or {}
-    token = str(data.get("qr_token", "")).strip()
+    token = secure_token(data.get("qr_token"), "Attendance token")
     browser = browser_id(data.get("browser_id"))
     with database() as db:
         session = db.execute(
