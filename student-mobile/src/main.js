@@ -35,29 +35,37 @@ function registration() {
           browser_id: browserId,
         }),
       });
-      renderApprovalStatus(request.id);
-      const poll = window.setInterval(async () => {
-        try {
-          const state = await api(
-            `/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`,
-          );
-          if (state.status === "Approved") {
-            window.clearInterval(poll);
-            showApprovalResult(state.student_code);
-          } else if (state.status === "Rejected") {
-            window.clearInterval(poll);
-            showRejectedResult();
+      showRegistrationResult("success", request.id);
+      window.setTimeout(() => {
+        renderApprovalStatus(request.id);
+        const poll = window.setInterval(async () => {
+          try {
+            const state = await api(
+              `/api/registration-requests/${request.id}/status?browser_id=${encodeURIComponent(browserId)}`,
+            );
+            if (state.status === "Approved") {
+              window.clearInterval(poll);
+              showApprovalResult(state.student_code);
+            } else if (state.status === "Rejected") {
+              window.clearInterval(poll);
+              showRejectedResult();
+            }
+          } catch (_) {
+            // Keep the waiting state during short network interruptions.
           }
-        } catch (_) {
-          // Keep the waiting state during short network interruptions.
-        }
-      }, 3000);
+        }, 3000);
+      }, 1400);
     } catch (error) {
-      notice.textContent = error.message;
-      notice.className = "error";
-      button.disabled = false;
+      showRegistrationResult("error", null, error.message);
     }
   };
+}
+
+function showRegistrationResult(kind, requestId, errorMessage = "") {
+  const success = kind === "success";
+  app.innerHTML = `<main class="student-card status-screen"><div class="brand"><img src="/icon.svg" alt="TuitionLedger logo"><small>TuitionLedger Student</small></div><div class="result-icon ${success ? "success" : "rejected"}">${success ? "✓" : "!"}</div><p class="eyebrow">${success ? "REQUEST RECEIVED" : "REQUEST NOT SENT"}</p><h1>${success ? "Your details are on the way." : "We could not send your request."}</h1><p class="intro">${success ? "Your tutor can now review your registration. Preparing your approval tracker…" : errorMessage}</p>${success ? '<div class="color-loader" aria-label="Preparing approval tracker"></div><p class="status-note">Request reference: ' + String(requestId).slice(0, 8) + "</p>" : '<button class="primary" id="retry-registration">Try again</button>'}</main>`;
+  if (!success)
+    document.querySelector("#retry-registration").onclick = registration;
 }
 
 function renderApprovalStatus(requestId) {
