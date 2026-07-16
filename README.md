@@ -42,7 +42,7 @@ The product is built around one trust boundary: a tutor approves a student's bro
 | Area | Capability |
 | --- | --- |
 | Tutor authentication | Supabase email sign-up, confirmation, login, session persistence, sign-out |
-| Student directory | Add, edit, delete, browser reset, search-ready records, sequential IDs (`STU001`) |
+| Student directory | Add, edit, archive, browser reset, search-ready records, sequential IDs (`STU001`) |
 | Registration | Tutor-generated QR, mobile registration form, pending approval, approve/reject |
 | Classes | Class CRUD, schedules, monthly fees, enrollment, short-lived attendance QR, countdown and session ending |
 | Attendance | Date/class history, present/absent status and manual correction |
@@ -185,6 +185,7 @@ Errors use the same shape:
 ```text
 POST  /api/auth/signup
 POST  /api/auth/login
+POST  /api/auth/refresh
 GET   /api/tutor
 PUT   /api/tutor
 ```
@@ -199,9 +200,15 @@ DELETE /api/students/:id
 POST   /api/students/:id/reset-browser
 POST   /api/registration-qr
 POST   /api/register-student
+GET    /api/registration-requests/:id/status
 GET    /api/registration-requests
 POST   /api/registration-requests/:id/approve
 POST   /api/registration-requests/:id/reject
+POST   /api/browser-requests
+GET    /api/browser-requests/:id/status
+GET    /api/browser-requests
+POST   /api/browser-requests/:id/approve
+POST   /api/browser-requests/:id/reject
 ```
 
 ### Classes, attendance and fees
@@ -211,6 +218,7 @@ GET    /api/classes
 POST   /api/classes
 PUT    /api/classes/:id
 DELETE /api/classes/:id
+GET    /api/classes/:id/students
 POST   /api/classes/:id/students
 DELETE /api/classes/:id/students/:student_id
 POST   /api/attendance-sessions
@@ -253,11 +261,13 @@ AUTH_REDIRECT_URL=http://localhost:5173/#login
 
 Use the **Session pooler** connection string from Supabase Dashboard → Connect → Connection Pooling. URL-encode special characters in the database password. Never commit `.env`, service-role keys, or database passwords.
 
-Apply the database from the Supabase SQL editor:
+Do **not** run the destructive reference `supabase/schema.sql` against an existing database. Back up and inspect the live schema, then apply the reviewed incremental migration:
 
 ```text
-supabase/schema.sql
+supabase/migrations/20260716102500_final_requirements_foundation.sql
 ```
+
+See [migration verification](docs/DATABASE_MIGRATION_VERIFICATION.md) before changing production data.
 
 ### 2. Start the Flask API
 
@@ -302,6 +312,7 @@ npm run build
 
 cd ..
 python -m compileall -q backend
+python -m pytest backend/tests -q
 git diff --check
 ```
 
