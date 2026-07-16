@@ -45,6 +45,41 @@ def students():
     return response([dict(row) for row in rows])
 
 
+@student_routes.get("/api/students/overview")
+@auth_required
+def students_overview():
+    """Load the Students page in one authenticated database round trip."""
+    owner = tutor_id()
+    with database() as db:
+        student_rows = db.execute(
+            """select s.*,
+            coalesce((
+              select json_agg(json_build_object('id',c.id,'class_name',c.class_name) order by c.class_name)
+              from class_students cs join classes c on c.id=cs.class_id
+              where cs.student_id=s.id and cs.status='Active' and c.status='Active'
+            ),'[]'::json) as enrolled_classes
+            from students s where s.tutor_id=%s and s.status='Active' order by s.created_at desc""",
+            (owner,),
+        ).fetchall()
+        registration_rows = db.execute(
+            "select * from registration_requests where tutor_id=%s order by submitted_at desc",
+            (owner,),
+        ).fetchall()
+        browser_rows = db.execute(
+            """select br.*,s.student_code,s.full_name from browser_requests br
+            join students s on s.id=br.student_id
+            where br.tutor_id=%s order by br.submitted_at desc""",
+            (owner,),
+        ).fetchall()
+    return response(
+        {
+            "students": [dict(row) for row in student_rows],
+            "registration_requests": [dict(row) for row in registration_rows],
+            "browser_requests": [dict(row) for row in browser_rows],
+        }
+    )
+
+
 @student_routes.post("/api/students")
 @auth_required
 def add_student():

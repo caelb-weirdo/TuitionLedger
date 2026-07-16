@@ -88,11 +88,10 @@ export async function studentsPage() {
   };
 
   try {
-    const [students, requests, browserRequests] = await Promise.all([
-      api("/api/students"),
-      api("/api/registration-requests"),
-      api("/api/browser-requests"),
-    ]);
+    const overview = await api("/api/students/overview");
+    const students = overview.students;
+    const requests = overview.registration_requests;
+    const browserRequests = overview.browser_requests;
     const pending = requests
       .filter((request) => request.status === "Pending")
       .map(
