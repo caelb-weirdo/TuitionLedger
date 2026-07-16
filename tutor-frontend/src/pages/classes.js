@@ -1,17 +1,17 @@
-import QRCode from "qrcode";
 import { api, esc, msg } from "../core/api.js";
-import { days, studentUrl, subjects } from "../core/config.js";
+import { days, subjects } from "../core/config.js";
 import { shell } from "./layout.js";
 
 export async function classesPage() {
   shell(
     "classes",
     "Classes",
-    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Open a class only when you need its roster or attendance QR.</p></div><button id="open-class-form" class="button">+ Add class</button></section><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><section id="class-list" class="class-workspaces compact-register">Loading classes...</section>`,
+    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Start attendance or manage a class without opening a long workspace.</p></div><button id="open-class-form" class="button">+ Add class</button></section><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><dialog id="manage-class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class roster</p><h3 id="manage-class-title">Manage class</h3></div><button id="close-manage-class" class="icon-button" type="button" aria-label="Close">&times;</button></div><div id="manage-class-content"></div></dialog><section id="class-list" class="class-card-grid">Loading classes...</section>`,
   );
 
   const form = document.querySelector("#class-form");
   const dialog = document.querySelector("#class-dialog");
+  const manageDialog = document.querySelector("#manage-class-dialog");
   let editingClass = null;
   const resetForm = () => {
     editingClass = null;
@@ -24,6 +24,8 @@ export async function classesPage() {
   };
   document.querySelector("#cancel-class-edit").onclick = resetForm;
   document.querySelector("#close-class-form").onclick = resetForm;
+  document.querySelector("#close-manage-class").onclick = () =>
+    manageDialog.close();
   document.querySelector("#open-class-form").onclick = () => dialog.showModal();
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -58,26 +60,33 @@ export async function classesPage() {
     host.innerHTML =
       classes
         .map((classItem) => {
-          const enrolled = rosters.get(classItem.id) || [];
-          const available = students.filter(
-            (student) => !enrolled.some((item) => item.id === student.id),
-          );
-          return `<article class="class-workspace" data-class="${classItem.id}"><header class="class-workspace-header"><div class="class-identity"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><div><span class="status-pill">${esc(classItem.grade)} · ${esc(classItem.subject)}</span><h3>${esc(classItem.class_name)}</h3><p>${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month · ${enrolled.length} student${enrolled.length === 1 ? "" : "s"}</p></div></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${classItem.id}">Edit</button><button class="button button-small danger" data-delete="${classItem.id}">Delete</button></div></header><details class="class-management"><summary>Manage roster & attendance <span aria-hidden="true">⌄</span></summary><div class="class-workspace-grid"><section><div class="section-heading"><p class="kicker">Enrolled students</p><h4>${enrolled.length} student${enrolled.length === 1 ? "" : "s"}</h4></div><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><div class="enrol-row"><select data-student-select><option value="">${available.length ? "Choose a student" : "All students enrolled"}</option>${available.map((student) => `<option value="${student.id}">${esc(student.student_code)} · ${esc(student.full_name)}</option>`).join("")}</select><button class="button button-small" data-enrol ${available.length ? "" : "disabled"}>Enrol</button></div></section><section class="session-desk"><div class="section-heading"><p class="kicker">Attendance session</p><h4>Open the room QR</h4></div><form data-session-form class="session-form"><label>Duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button">Generate QR</button></form><div data-session-result class="session-result"><p class="muted">No active session from this screen.</p></div></section></div></details></article>`;
+          const count = (rosters.get(classItem.id) || []).length;
+          return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3></div><div class="class-mini-actions"><a class="button button-small" href="#qr-session?class=${classItem.id}">Start QR</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
         })
         .join("") ||
       `<article class="record-card"><h3>No classes yet</h3><p>Create your first class to enrol students and start attendance.</p></article>`;
 
-    host.querySelectorAll("[data-class]").forEach((card) => {
-      const classId = card.dataset.class;
-      card
-        .querySelector("[data-session-form]")
-        .insertAdjacentHTML(
-          "afterbegin",
-          `<label>Attendance date<input type="date" name="attendance_date" value="${new Date().toISOString().slice(0, 10)}" required></label>`,
+    host.querySelectorAll("[data-manage]").forEach((button) => {
+      button.onclick = () => {
+        const classItem = classes.find(
+          (item) => item.id === button.dataset.manage,
         );
-      card.querySelector("[data-edit]").onclick = () => {
-        editingClass = classes.find((item) => item.id === classId);
-        Object.entries(editingClass).forEach(([key, value]) => {
+        renderManager(classItem, rosters.get(classItem.id) || [], students);
+      };
+    });
+
+    function renderManager(classItem, enrolled, allStudents) {
+      const available = allStudents.filter(
+        (student) => !enrolled.some((item) => item.id === student.id),
+      );
+      document.querySelector("#manage-class-title").textContent =
+        classItem.class_name;
+      const content = document.querySelector("#manage-class-content");
+      content.innerHTML = `<p class="muted class-detail-line">${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month</p><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><div class="enrol-row"><select data-student-select><option value="">${available.length ? "Choose a student" : "All students enrolled"}</option>${available.map((student) => `<option value="${student.id}">${esc(student.student_code)} · ${esc(student.full_name)}</option>`).join("")}</select><button class="button button-small" data-enrol ${available.length ? "" : "disabled"}>Enrol</button></div><div class="dialog-footer"><button class="button button-small button-ghost" data-edit>Edit details</button><button class="button button-small danger" data-delete>Delete class</button></div>`;
+      content.querySelector("[data-edit]").onclick = () => {
+        manageDialog.close();
+        editingClass = classItem;
+        Object.entries(classItem).forEach(([key, value]) => {
           const field = form.elements.namedItem(key);
           if (field && value != null) field.value = value;
         });
@@ -87,82 +96,36 @@ export async function classesPage() {
         ).textContent = "Update class";
         dialog.showModal();
       };
-      card.querySelector("[data-delete]").onclick = async () => {
+      content.querySelector("[data-delete]").onclick = async () => {
         if (confirm("Delete this class?")) {
-          await api(`/api/classes/${classId}`, { method: "DELETE" });
+          await api(`/api/classes/${classItem.id}`, { method: "DELETE" });
           classesPage();
         }
       };
-      card.querySelector("[data-enrol]").onclick = async () => {
-        const studentId = card.querySelector("[data-student-select]").value;
+      content.querySelector("[data-enrol]").onclick = async () => {
+        const studentId = content.querySelector("[data-student-select]").value;
         if (!studentId) return;
-        await api(`/api/classes/${classId}/students`, {
+        await api(`/api/classes/${classItem.id}/students`, {
           method: "POST",
           body: JSON.stringify({ student_id: studentId }),
         });
         classesPage();
       };
-      card.querySelectorAll("[data-remove-student]").forEach((button) => {
-        button.onclick = async () => {
+      content.querySelectorAll("[data-remove-student]").forEach((remove) => {
+        remove.onclick = async () => {
           await api(
-            `/api/classes/${classId}/students/${button.dataset.removeStudent}`,
+            `/api/classes/${classItem.id}/students/${remove.dataset.removeStudent}`,
             { method: "DELETE" },
           );
           classesPage();
         };
       });
-      card.querySelector("[data-session-form]").onsubmit = async (event) => {
-        event.preventDefault();
-        const result = card.querySelector("[data-session-result]");
-        try {
-          const session = await api("/api/attendance-sessions", {
-            method: "POST",
-            body: JSON.stringify({
-              class_id: classId,
-              duration_minutes: new FormData(event.currentTarget).get(
-                "duration_minutes",
-              ),
-              attendance_date: new FormData(event.currentTarget).get(
-                "attendance_date",
-              ),
-            }),
-          });
-          const url = `${studentUrl}/?attendance_token=${encodeURIComponent(session.qr_token)}`;
-          const qr = await QRCode.toDataURL(url, { width: 260 });
-          const expiresAt = new Date(session.expires_at).getTime();
-          result.innerHTML = `<div class="qr-card compact"><div class="qr-status-row"><span class="status-pill">Active</span><strong data-countdown></strong></div><img src="${qr}" alt="Attendance QR for ${esc(classItemName(classes, classId))}"><p>Students scan with their approved browser.</p><div class="qr-action-row"><button class="button button-small danger" data-end-session>End session</button></div></div>`;
-          const countdown = result.querySelector("[data-countdown]");
-          let timer = null;
-          const updateCountdown = () => {
-            const seconds = Math.max(
-              0,
-              Math.ceil((expiresAt - Date.now()) / 1000),
-            );
-            countdown.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} remaining`;
-            if (!seconds) window.clearInterval(timer);
-          };
-          updateCountdown();
-          timer = window.setInterval(updateCountdown, 1000);
-          result.querySelector("[data-end-session]").onclick = async () => {
-            await api(`/api/attendance-sessions/${session.id}/end`, {
-              method: "POST",
-            });
-            window.clearInterval(timer);
-            result.innerHTML = msg("Attendance session ended.", "success");
-          };
-        } catch (error) {
-          result.innerHTML = msg(error.message, "error");
-        }
-      };
-    });
+      manageDialog.showModal();
+    }
   } catch (error) {
     document.querySelector("#class-list").innerHTML = msg(
       error.message,
       "error",
     );
   }
-}
-
-function classItemName(classes, classId) {
-  return classes.find((item) => item.id === classId)?.class_name || "class";
 }

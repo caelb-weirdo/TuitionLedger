@@ -6,6 +6,7 @@ import { authPage } from "./pages/auth.js";
 import { dashboard } from "./pages/dashboard.js";
 import { studentsPage } from "./pages/students.js";
 import { classesPage } from "./pages/classes.js";
+import { qrSessionPage } from "./pages/qr-session.js";
 import { attendanceWorkspacePage } from "./pages/attendance.js";
 import { feesPage } from "./pages/fees.js";
 import { registerTutorPwa } from "./pwa.js";
@@ -25,6 +26,7 @@ function render() {
         dashboard,
         students: studentsPage,
         classes: classesPage,
+        "qr-session": qrSessionPage,
         attendance: attendanceWorkspacePage,
         fees: feesPage,
       })[p] || dashboard
