@@ -32,7 +32,10 @@ export function registerTutorPwa() {
     registration.addEventListener("updatefound", () => {
       const worker = registration.installing;
       worker?.addEventListener("statechange", () => {
-        if (worker.state === "installed" && navigator.serviceWorker.controller) {
+        if (
+          worker.state === "installed" &&
+          navigator.serviceWorker.controller
+        ) {
           document.dispatchEvent(new CustomEvent("tuitionledger:update-ready"));
         }
       });

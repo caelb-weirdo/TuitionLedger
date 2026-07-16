@@ -144,12 +144,18 @@ button:disabled {
   margin: 12px auto 28px;
   border-radius: 50%;
   background: conic-gradient(#45c49a, #6fa8ff, #d6b878, #e784b9, #45c49a);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 0);
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 9px),
+    #000 0
+  );
   mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 0);
   animation: approval-spin 1.7s linear infinite;
 }
 @keyframes approval-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .status-steps {
   display: grid;
@@ -165,10 +171,12 @@ button:disabled {
   border: 1px solid #ffffff18;
   border-radius: 16px;
   background: #ffffff08;
-  opacity: .52;
+  opacity: 0.52;
 }
 .status-step.complete,
-.status-step.active { opacity: 1; }
+.status-step.active {
+  opacity: 1;
+}
 .status-step span,
 .result-icon,
 .success-icon {
@@ -183,13 +191,23 @@ button:disabled {
   font-weight: 800;
 }
 .status-step.complete span,
-.success-icon { background: var(--green); color: #08120f; }
-.status-step small { display: block; color: var(--muted); margin-top: 3px; }
-.status-note { color: #718179; font-size: 12px; }
+.success-icon {
+  background: var(--green);
+  color: #08120f;
+}
+.status-step small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.status-note {
+  color: #718179;
+  font-size: 12px;
+}
 .success-popup {
   position: fixed;
   inset: 50% auto auto 50%;
-  width: min( calc(100% - 32px), 390px );
+  width: min(calc(100% - 32px), 390px);
   padding: 28px;
   transform: translate(-50%, -50%);
   border: 1px solid #ffffff2b;
@@ -199,14 +217,37 @@ button:disabled {
   text-align: center;
   z-index: 3;
 }
-.success-icon { width: 54px; height: 54px; margin: 0 auto 16px; font-size: 26px; }
-.success-popup h2 { margin: 5px 0 8px; }
-.success-popup p:not(.eyebrow) { color: var(--muted); }
-.student-code { display: block; margin: 18px 0; color: var(--gold); font-size: 24px; letter-spacing: .08em; }
-.success-popup .primary { width: 100%; }
-.result-icon.rejected { margin: 20px auto; background: #8d3e4e; color: #fff; }
+.success-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  font-size: 26px;
+}
+.success-popup h2 {
+  margin: 5px 0 8px;
+}
+.success-popup p:not(.eyebrow) {
+  color: var(--muted);
+}
+.student-code {
+  display: block;
+  margin: 18px 0;
+  color: var(--gold);
+  font-size: 24px;
+  letter-spacing: 0.08em;
+}
+.success-popup .primary {
+  width: 100%;
+}
+.result-icon.rejected {
+  margin: 20px auto;
+  background: #8d3e4e;
+  color: #fff;
+}
 @media (prefers-reduced-motion: reduce) {
-  .color-loader { animation: none; }
+  .color-loader {
+    animation: none;
+  }
 }
 @media (max-width: 520px) {
   .student-card {

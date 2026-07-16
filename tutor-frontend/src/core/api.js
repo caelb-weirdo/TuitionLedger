@@ -47,11 +47,20 @@ export async function api(path, options = {}, retried = false) {
       signal: options.signal || controller.signal,
     });
   } catch (error) {
-    throw Error(error.name === "AbortError" ? "The request timed out. Try again." : "We could not connect to the server.");
+    throw Error(
+      error.name === "AbortError"
+        ? "The request timed out. Try again."
+        : "We could not connect to the server.",
+    );
   } finally {
     window.clearTimeout(timeout);
   }
-  if (response.status === 401 && !retried && token() && (await refreshSession())) {
+  if (
+    response.status === 401 &&
+    !retried &&
+    token() &&
+    (await refreshSession())
+  ) {
     return api(path, options, true);
   }
   const body = await response.json().catch(() => null);

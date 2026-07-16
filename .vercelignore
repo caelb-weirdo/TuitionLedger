@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/.pytest_cache
+**/.ruff_cache

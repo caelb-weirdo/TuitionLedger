@@ -23,13 +23,16 @@ export async function attendanceWorkspacePage() {
     listHost.innerHTML =
       visible
         .map(
-          (record) => `<article class="attendance-history-row"><div><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)} · ${esc(record.attendance_date)} · ${esc(record.marked_method)}</small></div><span class="attendance-status ${record.status.toLowerCase()}">${esc(record.status)}</span><div class="attendance-actions"><button class="button button-small ${record.status === "Present" ? "button-ghost" : ""}" data-status="Present" data-record="${record.id}">Present</button><button class="button button-small ${record.status === "Absent" ? "button-ghost" : ""}" data-status="Absent" data-record="${record.id}">Absent</button></div></article>`,
+          (record) =>
+            `<article class="attendance-history-row"><div><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)} · ${esc(record.attendance_date)} · ${esc(record.marked_method)}</small></div><span class="attendance-status ${record.status.toLowerCase()}">${esc(record.status)}</span><div class="attendance-actions"><button class="button button-small ${record.status === "Present" ? "button-ghost" : ""}" data-status="Present" data-record="${record.id}">Present</button><button class="button button-small ${record.status === "Absent" ? "button-ghost" : ""}" data-status="Absent" data-record="${record.id}">Absent</button></div></article>`,
         )
         .join("") ||
       `<p class="muted">No attendance records match these filters. Start the next QR from Classes.</p>`;
     listHost.querySelectorAll("[data-record]").forEach((button) => {
       button.onclick = async () => {
-        const record = records.find((item) => item.id === button.dataset.record);
+        const record = records.find(
+          (item) => item.id === button.dataset.record,
+        );
         const reason = window.prompt("Reason for this manual correction:");
         if (!reason?.trim()) return;
         try {
@@ -75,7 +78,12 @@ export async function attendanceWorkspacePage() {
   try {
     const classes = await api("/api/classes");
     classSelect.innerHTML = classes.length
-      ? classes.map((item) => `<option value="${item.id}">${esc(item.grade)} · ${esc(item.subject)} · ${esc(item.class_name)}</option>`).join("")
+      ? classes
+          .map(
+            (item) =>
+              `<option value="${item.id}">${esc(item.grade)} · ${esc(item.subject)} · ${esc(item.class_name)}</option>`,
+          )
+          .join("")
       : '<option value="">No classes available</option>';
     classSelect.disabled = !classes.length;
     notice.textContent = classes.length

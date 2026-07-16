@@ -49,10 +49,12 @@ export async function studentsPage() {
     const tutor = auth()?.user?.id;
     const url = `${studentUrl}/?connect=true&tutor=${encodeURIComponent(tutor || "")}`;
     navigator.clipboard?.writeText(url);
-    document.querySelector("#student-content").insertAdjacentHTML(
-      "afterbegin",
-      msg(`Connection link copied: ${url}`, "success"),
-    );
+    document
+      .querySelector("#student-content")
+      .insertAdjacentHTML(
+        "afterbegin",
+        msg(`Connection link copied: ${url}`, "success"),
+      );
   };
   document.querySelector("#registration-qr").onclick = async () => {
     try {
@@ -112,7 +114,8 @@ export async function studentsPage() {
     const pendingBrowsers = browserRequests
       .filter((item) => item.status === "Pending")
       .map(
-        (item) => `<article class="management-row pending"><div><span class="status-pill">Browser pending</span><h3>${esc(item.full_name)}</h3><p>${esc(item.student_code)}</p></div><div class="card-actions"><button class="button button-small" data-browser-approve="${item.id}">Approve browser</button><button class="button button-small button-ghost" data-browser-reject="${item.id}">Reject</button></div></article>`,
+        (item) =>
+          `<article class="management-row pending"><div><span class="status-pill">Browser pending</span><h3>${esc(item.full_name)}</h3><p>${esc(item.student_code)}</p></div><div class="card-actions"><button class="button button-small" data-browser-approve="${item.id}">Approve browser</button><button class="button button-small button-ghost" data-browser-reject="${item.id}">Reject</button></div></article>`,
       )
       .join("");
     const host = document.querySelector("#student-content");
@@ -145,13 +148,19 @@ export async function studentsPage() {
     });
     host.querySelectorAll("[data-browser-approve]").forEach((button) => {
       button.onclick = async () => {
-        await api(`/api/browser-requests/${button.dataset.browserApprove}/approve`, { method: "POST" });
+        await api(
+          `/api/browser-requests/${button.dataset.browserApprove}/approve`,
+          { method: "POST" },
+        );
         studentsPage();
       };
     });
     host.querySelectorAll("[data-browser-reject]").forEach((button) => {
       button.onclick = async () => {
-        await api(`/api/browser-requests/${button.dataset.browserReject}/reject`, { method: "POST" });
+        await api(
+          `/api/browser-requests/${button.dataset.browserReject}/reject`,
+          { method: "POST" },
+        );
         studentsPage();
       };
     });

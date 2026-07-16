@@ -16,17 +16,22 @@ export async function classesPage() {
     editingClass = null;
     form.reset();
     document.querySelector("#class-form-title").textContent = "Create class";
-    form.querySelector('button[type="submit"], button:not([type])').textContent = "Save class";
+    form.querySelector(
+      'button[type="submit"], button:not([type])',
+    ).textContent = "Save class";
     document.querySelector("#cancel-class-edit").hidden = true;
   };
   document.querySelector("#cancel-class-edit").onclick = resetForm;
   form.onsubmit = async (event) => {
     event.preventDefault();
     try {
-      await api(editingClass ? `/api/classes/${editingClass.id}` : "/api/classes", {
-        method: editingClass ? "PUT" : "POST",
-        body: JSON.stringify(Object.fromEntries(new FormData(form))),
-      });
+      await api(
+        editingClass ? `/api/classes/${editingClass.id}` : "/api/classes",
+        {
+          method: editingClass ? "PUT" : "POST",
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        },
+      );
       classesPage();
     } catch (error) {
       form.insertAdjacentHTML("beforebegin", msg(error.message, "error"));
@@ -74,7 +79,9 @@ export async function classesPage() {
           if (field && value != null) field.value = value;
         });
         document.querySelector("#class-form-title").textContent = "Edit class";
-        form.querySelector('button[type="submit"], button:not([type])').textContent = "Update class";
+        form.querySelector(
+          'button[type="submit"], button:not([type])',
+        ).textContent = "Update class";
         document.querySelector("#cancel-class-edit").hidden = false;
         form.scrollIntoView({ behavior: "smooth", block: "center" });
       };
@@ -95,7 +102,10 @@ export async function classesPage() {
       };
       card.querySelectorAll("[data-remove-student]").forEach((button) => {
         button.onclick = async () => {
-          await api(`/api/classes/${classId}/students/${button.dataset.removeStudent}`, { method: "DELETE" });
+          await api(
+            `/api/classes/${classId}/students/${button.dataset.removeStudent}`,
+            { method: "DELETE" },
+          );
           classesPage();
         };
       });
@@ -107,8 +117,12 @@ export async function classesPage() {
             method: "POST",
             body: JSON.stringify({
               class_id: classId,
-              duration_minutes: new FormData(event.currentTarget).get("duration_minutes"),
-              attendance_date: new FormData(event.currentTarget).get("attendance_date"),
+              duration_minutes: new FormData(event.currentTarget).get(
+                "duration_minutes",
+              ),
+              attendance_date: new FormData(event.currentTarget).get(
+                "attendance_date",
+              ),
             }),
           });
           const url = `${studentUrl}/?attendance_token=${encodeURIComponent(session.qr_token)}`;
@@ -118,14 +132,19 @@ export async function classesPage() {
           const countdown = result.querySelector("[data-countdown]");
           let timer = null;
           const updateCountdown = () => {
-            const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+            const seconds = Math.max(
+              0,
+              Math.ceil((expiresAt - Date.now()) / 1000),
+            );
             countdown.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} remaining`;
             if (!seconds) window.clearInterval(timer);
           };
           updateCountdown();
           timer = window.setInterval(updateCountdown, 1000);
           result.querySelector("[data-end-session]").onclick = async () => {
-            await api(`/api/attendance-sessions/${session.id}/end`, { method: "POST" });
+            await api(`/api/attendance-sessions/${session.id}/end`, {
+              method: "POST",
+            });
             window.clearInterval(timer);
             result.innerHTML = msg("Attendance session ended.", "success");
           };
@@ -135,7 +154,10 @@ export async function classesPage() {
       };
     });
   } catch (error) {
-    document.querySelector("#class-list").innerHTML = msg(error.message, "error");
+    document.querySelector("#class-list").innerHTML = msg(
+      error.message,
+      "error",
+    );
   }
 }
 

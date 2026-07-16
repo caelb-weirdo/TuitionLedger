@@ -26,7 +26,12 @@ export async function dashboard() {
     const today = new Date().getDay();
     const todayClasses = classes.filter((item) => Number(item.day) === today);
     document.querySelector("#today-classes").innerHTML = todayClasses.length
-      ? todayClasses.map((item) => `<a class="overview-row" href="#classes"><span><strong>${esc(item.class_name)}</strong><small>${esc(item.grade)} · ${esc(item.subject)}</small></span><time>${esc(item.start_time)}–${esc(item.end_time)}</time></a>`).join("")
+      ? todayClasses
+          .map(
+            (item) =>
+              `<a class="overview-row" href="#classes"><span><strong>${esc(item.class_name)}</strong><small>${esc(item.grade)} · ${esc(item.subject)}</small></span><time>${esc(item.start_time)}–${esc(item.end_time)}</time></a>`,
+          )
+          .join("")
       : `<p class="muted">No classes scheduled for ${days[today]}.</p>`;
     const recent = [
       ...requests.slice(0, 3).map((item) => ({
@@ -34,16 +39,26 @@ export async function dashboard() {
         detail: item.status,
         href: "#students",
       })),
-      ...fees.filter((item) => item.status === "Unpaid").slice(0, 3).map((item) => ({
-        label: `${item.full_name} fee`,
-        detail: "Unpaid",
-        href: "#fees",
-      })),
+      ...fees
+        .filter((item) => item.status === "Unpaid")
+        .slice(0, 3)
+        .map((item) => ({
+          label: `${item.full_name} fee`,
+          detail: "Unpaid",
+          href: "#fees",
+        })),
     ].slice(0, 5);
     document.querySelector("#recent-activity").innerHTML = recent.length
-      ? recent.map((item) => `<a class="overview-row" href="${item.href}"><strong>${esc(item.label)}</strong><span class="status-pill">${esc(item.detail)}</span></a>`).join("")
+      ? recent
+          .map(
+            (item) =>
+              `<a class="overview-row" href="${item.href}"><strong>${esc(item.label)}</strong><span class="status-pill">${esc(item.detail)}</span></a>`,
+          )
+          .join("")
       : '<p class="muted">No recent registrations or unpaid fees.</p>';
   } catch (error) {
-    document.querySelector("#stats")?.insertAdjacentHTML("afterend", msg(error.message, "error"));
+    document
+      .querySelector("#stats")
+      ?.insertAdjacentHTML("afterend", msg(error.message, "error"));
   }
 }
