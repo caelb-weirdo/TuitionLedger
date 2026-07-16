@@ -1,10 +1,12 @@
 import { api, esc, msg } from "../core/api.js";
 import { shell } from "./layout.js";
 export async function feesPage() {
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   shell(
     "fees",
     "Fees",
-    `<section class="page-intro"><p class="kicker">Monthly ledger</p><h2>Mark paid and remind clearly.</h2><p class="muted">Generate a month after enrolling students to create the fee rows.</p></section><article class="form-card"><form id="fee-form" class="inline-form"><label>Month<input type="month" name="month" required></label><button class="button">Generate fee rows</button></form><p id="fee-notice" class="form-notice" aria-live="polite"></p></article><section id="fee-list" class="list-grid" aria-live="polite">Loading fee records…</section>`,
+    `<section class="page-intro"><p class="kicker">Monthly ledger</p><h2>Mark paid and remind clearly.</h2><p class="muted">The current month is prepared automatically. Generate another month when needed.</p></section><article class="form-card"><form id="fee-form" class="inline-form"><label>Month<input type="month" name="month" value="${currentMonth}" required></label><button class="button">Generate fee rows</button></form><p id="fee-notice" class="form-notice" aria-live="polite"></p></article><section id="fee-list" class="list-grid" aria-live="polite">Loading fee records…</section>`,
   );
   document.querySelector("#fee-form").onsubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +33,10 @@ export async function feesPage() {
     }
   };
   try {
+    await api("/api/fees/ensure", {
+      method: "POST",
+      body: JSON.stringify({ month: currentMonth }),
+    });
     const list = await api("/api/fees"),
       host = document.querySelector("#fee-list");
     host.innerHTML =

@@ -147,6 +147,61 @@ def enroll_student(class_id):
     return response(dict(row), "Student enrolled.", 201)
 
 
+@class_routes.post("/api/classes/<class_id>/students/bulk")
+@auth_required
+def enroll_students_bulk(class_id):
+    uuid_value(class_id, "Class")
+    raw_ids = (request.get_json(silent=True) or {}).get("student_ids")
+    if not isinstance(raw_ids, list) or not raw_ids or len(raw_ids) > 200:
+        return response(message="Choose between 1 and 200 students.", status=422)
+    student_ids = list(
+        dict.fromkeys(str(uuid_value(value, "Student")) for value in raw_ids)
+    )
+    with database() as db:
+        owned_class = db.execute(
+            "select 1 from classes where id=%s and tutor_id=%s and status='Active'",
+            (class_id, tutor_id()),
+        ).fetchone()
+        if not owned_class:
+            return response(message="Class not found.", status=404)
+        valid_rows = db.execute(
+            "select id from students where id=any(%s::uuid[]) and tutor_id=%s and status='Active'",
+            (student_ids, tutor_id()),
+        ).fetchall()
+        valid_ids = [str(row["id"]) for row in valid_rows]
+        failed = [value for value in student_ids if value not in valid_ids]
+        existing_rows = (
+            db.execute(
+                "select student_id from class_students where class_id=%s and student_id=any(%s::uuid[]) and status='Active'",
+                (class_id, valid_ids),
+            ).fetchall()
+            if valid_ids
+            else []
+        )
+        existing = {str(row["student_id"]) for row in existing_rows}
+        changed = [value for value in valid_ids if value not in existing]
+        rows = (
+            db.execute(
+                """insert into class_students(class_id,student_id,status)
+            select %s,student_id,'Active' from unnest(%s::uuid[]) student_id
+            on conflict(class_id,student_id) do update set status='Active',enrolled_at=now()
+            returning student_id""",
+                (class_id, changed),
+            ).fetchall()
+            if changed
+            else []
+        )
+        db.commit()
+    return response(
+        {
+            "enrolled": len(rows),
+            "already_enrolled": len(existing),
+            "failed": failed,
+        },
+        "Selected students enrolled.",
+    )
+
+
 @class_routes.delete("/api/classes/<class_id>/students/<student_id>")
 @auth_required
 def remove_student(class_id, student_id):

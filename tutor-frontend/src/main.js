@@ -5,6 +5,7 @@ import { landing } from "./pages/landing.js";
 import { authPage } from "./pages/auth.js";
 import { dashboard } from "./pages/dashboard.js";
 import { studentsPage } from "./pages/students.js";
+import { studentDetailPage } from "./pages/student-detail.js";
 import { classesPage } from "./pages/classes.js";
 import { qrSessionPage } from "./pages/qr-session.js";
 import { attendanceWorkspacePage } from "./pages/attendance.js";
@@ -25,6 +26,7 @@ function render() {
       ({
         dashboard,
         students: studentsPage,
+        student: studentDetailPage,
         classes: classesPage,
         "qr-session": qrSessionPage,
         attendance: attendanceWorkspacePage,

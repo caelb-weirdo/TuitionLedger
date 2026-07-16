@@ -7,6 +7,27 @@ from validators import fee_month, fee_status, sri_lankan_phone, uuid_value
 fee_routes = Blueprint("fees", __name__)
 
 
+def ensure_month(db, month, owner):
+    return db.execute(
+        """insert into fee_records(tutor_id,student_id,class_id,month,amount,status)
+        select %s,cs.student_id,c.id,%s,c.monthly_fee,'Unpaid' from classes c
+        join class_students cs on cs.class_id=c.id join students s on s.id=cs.student_id
+        where c.tutor_id=%s and c.status='Active' and cs.status='Active' and s.status='Active'
+        on conflict(student_id,class_id,month) do nothing returning *""",
+        (owner, month, owner),
+    ).fetchall()
+
+
+@fee_routes.post("/api/fees/ensure")
+@auth_required
+def ensure_fees():
+    month = fee_month((request.get_json(silent=True) or {}).get("month"))
+    with database() as db:
+        rows = ensure_month(db, month, tutor_id())
+        db.commit()
+    return response({"created": len(rows)}, "Monthly fee records are ready.")
+
+
 @fee_routes.get("/api/fees")
 @auth_required
 def fees():
@@ -24,13 +45,7 @@ def fees():
 def generate_fees():
     month = fee_month((request.get_json(silent=True) or {}).get("month"))
     with database() as db:
-        rows = db.execute(
-            """insert into fee_records(tutor_id,student_id,class_id,month,amount,status)
-            select %s,cs.student_id,c.id,%s,c.monthly_fee,'Unpaid' from classes c join class_students cs on cs.class_id=c.id
-            join students s on s.id=cs.student_id where c.tutor_id=%s and c.status='Active' and cs.status='Active' and s.status='Active'
-            on conflict(student_id,class_id,month) do nothing returning *""",
-            (tutor_id(), month, tutor_id()),
-        ).fetchall()
+        rows = ensure_month(db, month, tutor_id())
         db.commit()
     return response([dict(row) for row in rows], "Monthly fee records generated.", 201)
 

@@ -3,11 +3,14 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, request
+from urllib.parse import quote
 
 from core import auth_required, database, response, tutor_id
 from validators import (
     browser_id,
     grade,
+    fee_month,
+    fee_status,
     person_name,
     secure_token,
     sri_lankan_phone,
@@ -158,6 +161,101 @@ def reset_browser(student_id):
         dict(row) if row else None,
         None if row else "Student not found.",
         200 if row else 404,
+    )
+
+
+@student_routes.get("/api/students/<student_id>/monthly-summary")
+@auth_required
+def student_monthly_summary(student_id):
+    uuid_value(student_id, "Student")
+    month = fee_month(request.args.get("month"))
+    with database() as db:
+        student = db.execute(
+            "select * from students where id=%s and tutor_id=%s and status='Active'",
+            (student_id, tutor_id()),
+        ).fetchone()
+        if not student:
+            return response(message="Student not found.", status=404)
+        fees = db.execute(
+            """select f.*,c.class_name from fee_records f join classes c on c.id=f.class_id
+            where f.student_id=%s and f.tutor_id=%s and f.month=%s order by c.class_name""",
+            (student_id, tutor_id(), month),
+        ).fetchall()
+        attendance = db.execute(
+            """select ar.*,c.class_name from attendance_records ar join classes c on c.id=ar.class_id
+            where ar.student_id=%s and c.tutor_id=%s and ar.attendance_date >= %s::date
+            and ar.attendance_date < (%s::date + interval '1 month') order by ar.attendance_date desc,c.class_name""",
+            (student_id, tutor_id(), month, month),
+        ).fetchall()
+    fee_rows = [dict(row) for row in fees]
+    attendance_rows = [dict(row) for row in attendance]
+    present = sum(row["status"] == "Present" for row in attendance_rows)
+    absent = sum(row["status"] == "Absent" for row in attendance_rows)
+    total_attendance = present + absent
+    return response(
+        {
+            "student": dict(student),
+            "fees": fee_rows,
+            "combined_amount": sum(row["amount"] for row in fee_rows),
+            "payment_status": "Paid"
+            if fee_rows and all(row["status"] == "Paid" for row in fee_rows)
+            else "Unpaid",
+            "attendance": attendance_rows,
+            "present": present,
+            "absent": absent,
+            "attendance_rate": round(present * 100 / total_attendance)
+            if total_attendance
+            else 0,
+        }
+    )
+
+
+@student_routes.put("/api/students/<student_id>/fees/<month_text>")
+@auth_required
+def update_student_month_fees(student_id, month_text):
+    uuid_value(student_id, "Student")
+    month = fee_month(month_text)
+    status = fee_status((request.get_json(silent=True) or {}).get("status"))
+    with database() as db:
+        rows = db.execute(
+            """update fee_records set status=%s,paid_at=case when %s='Paid' then now() else null end,updated_at=now()
+            where student_id=%s and tutor_id=%s and month=%s returning id""",
+            (status, status, student_id, tutor_id(), month),
+        ).fetchall()
+        db.commit()
+    return response(
+        {"updated": len(rows), "status": status}, "Monthly payment updated."
+    )
+
+
+@student_routes.get("/api/students/<student_id>/fees/<month_text>/whatsapp")
+@auth_required
+def student_month_whatsapp(student_id, month_text):
+    uuid_value(student_id, "Student")
+    month = fee_month(month_text)
+    with database() as db:
+        student = db.execute(
+            "select full_name,guardian_whatsapp from students where id=%s and tutor_id=%s and status='Active'",
+            (student_id, tutor_id()),
+        ).fetchone()
+        rows = db.execute(
+            """select f.amount,c.class_name from fee_records f join classes c on c.id=f.class_id
+            where f.student_id=%s and f.tutor_id=%s and f.month=%s and f.status='Unpaid' order by c.class_name""",
+            (student_id, tutor_id(), month),
+        ).fetchall()
+    if not student or not rows:
+        return response(message="No unpaid fees found.", status=404)
+    total = sum(row["amount"] for row in rows)
+    classes = ", ".join(row["class_name"] for row in rows)
+    message = f"Hello, this is a reminder that {student['full_name']}'s fees for {month:%B %Y} are unpaid. Classes: {classes}. Total: Rs. {total}. Thank you."
+    phone = sri_lankan_phone(
+        student["guardian_whatsapp"], "Guardian WhatsApp"
+    ).removeprefix("+")
+    return response(
+        {
+            "url": f"https://wa.me/{phone}?text={quote(message, safe='')}",
+            "message": message,
+        }
     )
 
 

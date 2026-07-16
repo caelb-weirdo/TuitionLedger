@@ -99,12 +99,12 @@ export async function studentsPage() {
           `<article class="record-card pending"><span class="status-pill">Pending approval</span><h3>${esc(request.full_name)}</h3><p>${esc(request.grade)} · ${esc(request.student_phone)}</p><button class="button button-small" data-approve="${request.id}">Approve</button><button class="button button-small button-ghost" data-reject="${request.id}">Reject</button></article>`,
       )
       .join("");
-    const approved = students
-      .map((student) => {
-        const enrolled = student.enrolled_classes || [];
-        return `<article class="record-card"><span class="status-pill">${esc(student.student_code)}</span><h3>${esc(student.full_name)}</h3><p>${esc(student.grade)} · ${esc(student.student_phone)}</p><strong>${esc(student.browser_status)}</strong><div class="read-only-enrolment"><small>Enrolled classes</small><p>${enrolled.map((classItem) => esc(classItem.class_name)).join(" · ") || "Not enrolled"}</p></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${student.id}">Edit</button><button class="button button-small button-ghost" data-reset="${student.id}">Reset browser</button><button class="button button-small danger" data-delete="${student.id}">Delete</button></div></article>`;
-      })
-      .join("");
+    const approved = `<div class="student-directory"><div class="student-directory-head"><span>Student</span><span>Grade</span><span>Browser</span><span></span></div>${students
+      .map(
+        (student) =>
+          `<a class="student-directory-row record-card" href="#student?student=${student.id}"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><span>${esc(student.grade)}</span><span class="status-pill">${esc(student.browser_status)}</span><span class="view-student">View →</span></a>`,
+      )
+      .join("")}</div>`;
     const pendingBrowsers = browserRequests
       .filter((item) => item.status === "Pending")
       .map(

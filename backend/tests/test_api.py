@@ -194,7 +194,9 @@ def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
     )
 
     attendance_insert = next(
-        sql.lower() for sql, _params in db.calls if "insert into attendance_records" in sql.lower()
+        sql.lower()
+        for sql, _params in db.calls
+        if "insert into attendance_records" in sql.lower()
     )
     assert result.status_code == 201
     assert "on conflict(class_id,student_id,attendance_date)" in attendance_insert
@@ -244,3 +246,61 @@ def test_fee_update_returns_paid_record(client, monkeypatch):
     )
     assert result.status_code == 200
     assert result.json["data"]["status"] == "Paid"
+
+
+def test_bulk_enrollment_accepts_multiple_students(client, monkeypatch):
+    student_ids = [
+        "550e8400-e29b-41d4-a716-446655440031",
+        "550e8400-e29b-41d4-a716-446655440032",
+    ]
+
+    def execute(sql, _params):
+        if "select 1 from classes" in sql:
+            return {"owned": True}
+        if "select id from students" in sql:
+            return [{"id": value} for value in student_ids]
+        if "insert into class_students" in sql:
+            return [{"student_id": value, "inserted": True} for value in student_ids]
+        return None
+
+    db = FakeDB(execute)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students/bulk",
+        headers=auth_headers(),
+        json={"student_ids": student_ids},
+    )
+    assert result.status_code == 200
+    assert result.json["data"]["enrolled"] == 2
+    assert result.json["data"]["failed"] == []
+
+
+def test_monthly_fee_toggle_updates_all_student_rows(client, monkeypatch):
+    db = FakeDB(
+        lambda sql, _params: (
+            [{"id": "fee-1"}, {"id": "fee-2"}] if "update fee_records" in sql else None
+        )
+    )
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.put(
+        "/api/students/550e8400-e29b-41d4-a716-446655440031/fees/2026-07",
+        headers=auth_headers(),
+        json={"status": "Paid"},
+    )
+    assert result.status_code == 200
+    assert result.json["data"]["updated"] == 2
+
+
+def test_fee_ensure_is_idempotent_insert(client, monkeypatch):
+    db = FakeDB(lambda sql, _params: [] if "insert into fee_records" in sql else None)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.post(
+        "/api/fees/ensure", headers=auth_headers(), json={"month": "2026-07"}
+    )
+    insert = next(
+        sql.lower()
+        for sql, _params in db.calls
+        if "insert into fee_records" in sql.lower()
+    )
+    assert result.status_code == 200
+    assert "on conflict(student_id,class_id,month) do nothing" in insert

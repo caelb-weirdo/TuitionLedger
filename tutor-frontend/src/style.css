@@ -906,6 +906,229 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+.app-shell {
+  display: block;
+}
+.app-shell aside {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 10;
+  width: 235px;
+  height: 100vh;
+  overflow-y: auto;
+}
+.app-shell .workspace {
+  margin-left: 235px;
+}
+.bulk-enrol {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.bulk-enrol-head,
+.bulk-enrol-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bulk-enrol-head input {
+  width: min(300px, 50%);
+}
+.bulk-enrol-tools {
+  margin: 14px 0 8px;
+  font-size: 13px;
+}
+.text-button {
+  border: 0;
+  background: transparent;
+  color: #6559b5;
+  font-weight: 700;
+}
+.student-check-list {
+  display: grid;
+  max-height: 260px;
+  margin-bottom: 14px;
+  overflow-y: auto;
+  border-block: 1px solid var(--line);
+}
+.student-check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.student-check-row span,
+.student-directory-row > span:first-child {
+  display: grid;
+}
+.student-check-row small,
+.student-directory-row small {
+  color: var(--muted);
+}
+.student-directory {
+  display: grid;
+  gap: 8px;
+}
+.student-directory-head,
+.student-directory-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 0.8fr 1fr 70px;
+  gap: 16px;
+  align-items: center;
+}
+.student-directory-head {
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.student-directory-row.record-card {
+  padding: 14px 16px;
+}
+.view-student {
+  color: #6559b5;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+}
+.student-detail-page {
+  display: grid;
+  gap: 18px;
+}
+.student-record-head,
+.student-month-bar,
+.attendance-totals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.student-record-head h2 {
+  margin: 8px 0 2px;
+  font-size: 32px;
+}
+.student-contact-grid,
+.student-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.student-contact-grid > div,
+.student-insight-grid > article,
+.student-month-bar {
+  padding: 18px;
+  border: 1px solid #ffffff9c;
+  border-radius: 18px;
+  background: #ffffff70;
+}
+.student-contact-grid small,
+.student-month-bar small {
+  display: block;
+  color: var(--muted);
+}
+.student-insight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.student-month-bar {
+  border-color: #7569c55c;
+  background: linear-gradient(110deg, #ffffffa8, #eeeaffb8);
+}
+.student-month-bar > div strong {
+  font-size: 26px;
+}
+.payment-toggle,
+.whatsapp-fee {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 800;
+}
+.payment-toggle.is-unpaid {
+  background: #f4b8c3;
+  color: #7f2639;
+}
+.payment-toggle.is-paid {
+  background: #bcebd9;
+  color: #1e7258;
+}
+.whatsapp-fee {
+  background: #25d366;
+  color: #092d17;
+}
+.whatsapp-fee.urgent {
+  box-shadow: 0 0 0 4px #25d3662e;
+}
+.attendance-totals span {
+  display: grid;
+  color: var(--muted);
+  text-align: center;
+}
+.attendance-totals strong {
+  color: #292944;
+  font-size: 28px;
+}
+.detail-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.detail-line span {
+  display: grid;
+}
+.detail-line small {
+  color: var(--muted);
+}
+.attendance-present {
+  color: #1e7258;
+}
+.attendance-absent {
+  color: #a3364e;
+}
+@media (max-width: 850px) {
+  .app-shell .workspace {
+    margin-left: 0;
+  }
+  .app-shell aside {
+    position: static;
+    width: auto;
+    height: auto;
+  }
+}
+@media (max-width: 700px) {
+  .student-directory-head {
+    display: none;
+  }
+  .student-directory-row {
+    grid-template-columns: 1fr auto;
+  }
+  .student-directory-row > span:nth-child(2),
+  .student-directory-row > span:nth-child(3) {
+    display: none;
+  }
+  .student-contact-grid,
+  .student-insight-grid {
+    grid-template-columns: 1fr;
+  }
+  .student-record-head,
+  .student-month-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bulk-enrol-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .bulk-enrol-head input {
+    width: 100%;
+  }
+}
 .auth-shell {
   position: relative;
   overflow: hidden;
