@@ -8,7 +8,7 @@ import { studentsPage } from "./pages/students.js";
 import { classesPage } from "./pages/classes.js";
 import { attendanceWorkspacePage } from "./pages/attendance.js";
 import { feesPage } from "./pages/fees.js";
-import { registerTutorPwa } from "./pwa.js";
+import { removeLegacyTutorPwa } from "./pwa.js";
 function render() {
   const p = (location.hash.slice(1) || "top").split("?")[0];
   if (p === "top") landing();
@@ -27,5 +27,5 @@ function render() {
     )();
 }
 window.addEventListener("hashchange", render);
-registerTutorPwa();
+removeLegacyTutorPwa();
 render();

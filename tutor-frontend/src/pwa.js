@@ -25,8 +25,17 @@ export function bindInstallButton() {
   };
 }
 
-export function registerTutorPwa() {
+export function removeLegacyTutorPwa() {
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    window.addEventListener("load", async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        registrations
+          .filter((registration) => new URL(registration.scope).origin === location.origin)
+          .map((registration) => registration.unregister()),
+      );
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.filter((name) => name.startsWith("tuitionledger-tutor-")).map((name) => caches.delete(name)));
+    });
   }
 }

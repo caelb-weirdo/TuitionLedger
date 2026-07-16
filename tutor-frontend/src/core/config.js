@@ -10,7 +10,7 @@ export const studentUrl =
   import.meta.env.VITE_STUDENT_APP_URL ||
   (localHost
     ? "http://localhost:5174"
-    : "https://tuitionledger-mobile.vercel.app");
+    : "https://student-mobile-pwa.vercel.app");
 export const logo = '<img src="/icon.svg" alt="">TuitionLedger';
 export const subjects = ["Maths", "Science", "English", "Tamil", "History"];
 export const days = [
