@@ -2,11 +2,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sys
 
-import psycopg
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 import app as api_app
+
+REQUEST_ID = "550e8400-e29b-41d4-a716-446655440001"
+FEE_ID = "550e8400-e29b-41d4-a716-446655440002"
+BROWSER_ID = "550e8400-e29b-41d4-a716-446655440003"
 
 
 class FakeResponse:
@@ -100,7 +103,7 @@ def test_expired_qr_is_rejected(client, monkeypatch):
     )
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "expired", "browser_id": "browser-1"}
+        "/api/attendance/scan", json={"qr_token": "expired", "browser_id": BROWSER_ID}
     )
     assert result.status_code == 410
     assert result.json["message"] == "QR code expired."
@@ -124,13 +127,13 @@ def test_wrong_browser_is_rejected(client, monkeypatch):
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": "unknown"}
+        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": BROWSER_ID}
     )
     assert result.status_code == 403
-    assert result.json["message"] == "This browser is not approved."
+    assert result.json["message"] == "This browser is not approved for attendance."
 
 
-def test_duplicate_attendance_returns_conflict(client, monkeypatch):
+def test_duplicate_attendance_returns_already_marked(client, monkeypatch):
     now = datetime.now(timezone.utc) + timedelta(minutes=5)
 
     def execute(sql, _params):
@@ -147,15 +150,19 @@ def test_duplicate_attendance_returns_conflict(client, monkeypatch):
             return {"id": "student-1"}
         if "class_students" in sql:
             return {"student_id": "student-1"}
-        raise psycopg.errors.UniqueViolation("duplicate attendance")
+        if "update attendance_records" in sql:
+            return None
+        if "select * from attendance_records" in sql:
+            return {"id": "attendance-1", "status": "Present"}
+        return None
 
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": "approved"}
+        "/api/attendance/scan", json={"qr_token": "valid", "browser_id": BROWSER_ID}
     )
-    assert result.status_code == 409
-    assert result.json["message"] == "Attendance already marked."
+    assert result.status_code == 200
+    assert result.json["data"]["result"] == "Already Marked"
 
 
 def test_registration_approval_generates_student_id(client, monkeypatch):
@@ -180,7 +187,7 @@ def test_registration_approval_generates_student_id(client, monkeypatch):
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.post(
-        "/api/registration-requests/request-1/approve", headers=auth_headers()
+        f"/api/registration-requests/{REQUEST_ID}/approve", headers=auth_headers()
     )
     assert result.status_code == 200
     assert result.json["data"]["student_code"] == "STU001"
@@ -197,7 +204,7 @@ def test_fee_update_returns_paid_record(client, monkeypatch):
     db = FakeDB(execute)
     monkeypatch.setattr(api_app, "database", lambda: db)
     result = client.put(
-        "/api/fees/fee-1", headers=auth_headers(), json={"status": "Paid"}
+        f"/api/fees/{FEE_ID}", headers=auth_headers(), json={"status": "Paid"}
     )
     assert result.status_code == 200
     assert result.json["data"]["status"] == "Paid"

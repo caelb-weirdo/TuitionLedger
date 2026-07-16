@@ -20,6 +20,10 @@ def response(data=None, message=None, status=200):
 
 
 def database():
+    app_module = sys.modules.get("app")
+    injected = getattr(app_module, "database", None) if app_module else None
+    if injected is not None and injected is not database:
+        return injected()
     url = os.getenv("SUPABASE_DB_URL") or os.getenv("DATABASE_URL")
     if not url:
         raise psycopg.OperationalError("Database is not configured")
