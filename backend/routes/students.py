@@ -301,6 +301,23 @@ def browser_requests():
     return response([dict(row) for row in rows])
 
 
+@student_routes.get("/api/browser-requests/<request_id>/status")
+def browser_request_status(request_id):
+    uuid_value(request_id, "Request")
+    browser = browser_id(request.args.get("browser_id"))
+    with database() as db:
+        row = db.execute(
+            """select br.status,s.student_code from browser_requests br
+            join students s on s.id=br.student_id where br.id=%s and br.browser_id=%s""",
+            (request_id, browser),
+        ).fetchone()
+    return response(
+        dict(row) if row else None,
+        None if row else "Request not found.",
+        200 if row else 404,
+    )
+
+
 def review_browser_request(request_id, decision):
     uuid_value(request_id, "Request")
     with database() as db:
