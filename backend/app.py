@@ -27,6 +27,7 @@ deployed_origins = [
     os.getenv("TUTOR_APP_URL", "https://tuitionledger-frontend.vercel.app"),
     os.getenv("STUDENT_APP_URL", "https://student-mobile-pwa.vercel.app"),
     "https://student-mobile-pwa-weirdos.vercel.app",
+    "https://tuitionledger-mobile.vercel.app",
 ]
 local_origins = [
     "http://localhost:5173",
