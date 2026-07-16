@@ -10,6 +10,10 @@ import { attendanceWorkspacePage } from "./pages/attendance.js";
 import { feesPage } from "./pages/fees.js";
 import { removeLegacyTutorPwa } from "./pwa.js";
 function render() {
+  if (window.__studentsRefreshTimer) {
+    window.clearInterval(window.__studentsRefreshTimer);
+    window.__studentsRefreshTimer = null;
+  }
   const p = (location.hash.slice(1) || "top").split("?")[0];
   if (p === "top") landing();
   else if (p === "login") authPage();
