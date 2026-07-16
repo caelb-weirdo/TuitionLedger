@@ -18,7 +18,7 @@ function markBusy(button) {
 document.addEventListener(
   "click",
   (event) => {
-    const button = event.target.closest("button.button,button.primary");
+    const button = event.target.closest("button[data-loading]");
     if (button && !button.disabled && !button.closest("#auth-form"))
       markBusy(button);
   },

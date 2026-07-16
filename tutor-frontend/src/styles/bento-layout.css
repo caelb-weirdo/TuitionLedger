@@ -61,6 +61,7 @@
   grid-column: span 4;
 }
 .form-card {
+  grid-column: 1 / -1;
   box-shadow:
     0 24px 70px #6574b52e,
     0 1px 0 #fff inset !important;
