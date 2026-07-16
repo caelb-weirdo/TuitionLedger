@@ -16,7 +16,7 @@ export async function feesPage() {
     try {
       await api("/api/fees/generate", {
         method: "POST",
-        body: JSON.stringify({ month: `${e.currentTarget.month.value}-01` }),
+        body: JSON.stringify({ month: e.currentTarget.month.value }),
       });
       feesPage();
     } catch (x) {

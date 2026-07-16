@@ -61,6 +61,12 @@ export async function classesPage() {
 
     host.querySelectorAll("[data-class]").forEach((card) => {
       const classId = card.dataset.class;
+      card
+        .querySelector("[data-session-form]")
+        .insertAdjacentHTML(
+          "afterbegin",
+          `<label>Attendance date<input type="date" name="attendance_date" value="${new Date().toISOString().slice(0, 10)}" required></label>`,
+        );
       card.querySelector("[data-edit]").onclick = () => {
         editingClass = classes.find((item) => item.id === classId);
         Object.entries(editingClass).forEach(([key, value]) => {
@@ -102,6 +108,7 @@ export async function classesPage() {
             body: JSON.stringify({
               class_id: classId,
               duration_minutes: new FormData(event.currentTarget).get("duration_minutes"),
+              attendance_date: new FormData(event.currentTarget).get("attendance_date"),
             }),
           });
           const url = `${studentUrl}/?attendance_token=${encodeURIComponent(session.qr_token)}`;

@@ -1,5 +1,5 @@
 import { app, logo } from "../core/config.js";
-import { api } from "../core/api.js";
+import { api, storeAuth } from "../core/api.js";
 function passwordField() {
   return '<div class="password-wrap"><input name="password" type="password" minlength="8" required><button class="password-toggle" type="button" aria-label="Show password"><svg class="password-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 12s3.4-6 9.8-6 9.8 6 9.8 6-3.4 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button></div>';
 }
@@ -28,7 +28,7 @@ export function authPage(signup = false) {
         n.textContent = "Account created. Check your email, then sign in.";
         setTimeout(() => (location.hash = "#login"), 1000);
       } else {
-        sessionStorage.setItem("tuitionledger:tutor", JSON.stringify(r));
+        storeAuth(r);
         location.hash = "#dashboard";
       }
     } catch (x) {

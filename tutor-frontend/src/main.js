@@ -8,7 +8,7 @@ import { studentsPage } from "./pages/students.js";
 import { classesPage } from "./pages/classes.js";
 import { attendanceWorkspacePage } from "./pages/attendance.js";
 import { feesPage } from "./pages/fees.js";
-import { removeLegacyTutorPwa } from "./pwa.js";
+import { registerTutorPwa } from "./pwa.js";
 function render() {
   if (window.__studentsRefreshTimer) {
     window.clearInterval(window.__studentsRefreshTimer);
@@ -31,5 +31,5 @@ function render() {
     )();
 }
 window.addEventListener("hashchange", render);
-removeLegacyTutorPwa();
+registerTutorPwa();
 render();

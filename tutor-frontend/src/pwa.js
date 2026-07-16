@@ -25,17 +25,17 @@ export function bindInstallButton() {
   };
 }
 
-export function removeLegacyTutorPwa() {
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(
-        registrations
-          .filter((registration) => new URL(registration.scope).origin === location.origin)
-          .map((registration) => registration.unregister()),
-      );
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.filter((name) => name.startsWith("tuitionledger-tutor-")).map((name) => caches.delete(name)));
+export function registerTutorPwa() {
+  if (!("serviceWorker" in navigator) || import.meta.env.DEV) return;
+  window.addEventListener("load", async () => {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    registration.addEventListener("updatefound", () => {
+      const worker = registration.installing;
+      worker?.addEventListener("statechange", () => {
+        if (worker.state === "installed" && navigator.serviceWorker.controller) {
+          document.dispatchEvent(new CustomEvent("tuitionledger:update-ready"));
+        }
+      });
     });
-  }
+  });
 }

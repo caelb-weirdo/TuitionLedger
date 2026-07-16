@@ -30,6 +30,8 @@ export async function attendanceWorkspacePage() {
     listHost.querySelectorAll("[data-record]").forEach((button) => {
       button.onclick = async () => {
         const record = records.find((item) => item.id === button.dataset.record);
+        const reason = window.prompt("Reason for this manual correction:");
+        if (!reason?.trim()) return;
         try {
           await api("/api/attendance/manual", {
             method: "POST",
@@ -38,6 +40,7 @@ export async function attendanceWorkspacePage() {
               class_id: record.class_id,
               student_id: record.student_id,
               status: button.dataset.status,
+              reason: reason.trim(),
             }),
           });
           await loadRecords();

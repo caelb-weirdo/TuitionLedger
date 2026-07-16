@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { api, esc, msg } from "../core/api.js";
+import { api, auth, esc, msg } from "../core/api.js";
 import { studentUrl } from "../core/config.js";
 import { shell } from "./layout.js";
 
@@ -42,9 +42,18 @@ export async function studentsPage() {
   shell(
     "students",
     "Students",
-    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar"><button id="add-student" class="button">Add student</button><button id="registration-qr" class="button button-ghost">Generate registration QR</button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><section id="student-content" class="list-grid">Loading students...</section>`,
+    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar"><button id="add-student" class="button">Add student</button><button id="registration-qr" class="button button-ghost">Generate registration QR</button><button id="connection-link" class="button button-ghost">Browser connection link</button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><section id="student-content" class="management-records">Loading students...</section>`,
   );
   document.querySelector("#add-student").onclick = () => studentForm();
+  document.querySelector("#connection-link").onclick = () => {
+    const tutor = auth()?.user?.id;
+    const url = `${studentUrl}/?connect=true&tutor=${encodeURIComponent(tutor || "")}`;
+    navigator.clipboard?.writeText(url);
+    document.querySelector("#student-content").insertAdjacentHTML(
+      "afterbegin",
+      msg(`Connection link copied: ${url}`, "success"),
+    );
+  };
   document.querySelector("#registration-qr").onclick = async () => {
     try {
       const registration = await api("/api/registration-qr", {
@@ -67,9 +76,10 @@ export async function studentsPage() {
   };
 
   try {
-    const [students, requests, classes] = await Promise.all([
+    const [students, requests, browserRequests, classes] = await Promise.all([
       api("/api/students"),
       api("/api/registration-requests"),
+      api("/api/browser-requests"),
       api("/api/classes"),
     ]);
     const rosters = new Map(
@@ -99,9 +109,15 @@ export async function studentsPage() {
         return `<article class="record-card"><span class="status-pill">${esc(student.student_code)}</span><h3>${esc(student.full_name)}</h3><p>${esc(student.grade)} · ${esc(student.student_phone)}</p><strong>${esc(student.browser_status)}</strong><div class="read-only-enrolment"><small>Enrolled classes</small><p>${enrolled.map((classItem) => esc(classItem.class_name)).join(" · ") || "Not enrolled"}</p></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${student.id}">Edit</button><button class="button button-small button-ghost" data-reset="${student.id}">Reset browser</button><button class="button button-small danger" data-delete="${student.id}">Delete</button></div></article>`;
       })
       .join("");
+    const pendingBrowsers = browserRequests
+      .filter((item) => item.status === "Pending")
+      .map(
+        (item) => `<article class="management-row pending"><div><span class="status-pill">Browser pending</span><h3>${esc(item.full_name)}</h3><p>${esc(item.student_code)}</p></div><div class="card-actions"><button class="button button-small" data-browser-approve="${item.id}">Approve browser</button><button class="button button-small button-ghost" data-browser-reject="${item.id}">Reject</button></div></article>`,
+      )
+      .join("");
     const host = document.querySelector("#student-content");
     host.innerHTML =
-      pending + approved ||
+      pending + pendingBrowsers + approved ||
       `<article class="record-card"><h3>No students yet</h3><p>Generate a registration QR or add the first student.</p></article>`;
     document.querySelector("#student-search").oninput = (event) => {
       const query = event.target.value.trim().toLowerCase();
@@ -124,6 +140,18 @@ export async function studentsPage() {
           `/api/registration-requests/${button.dataset.reject}/reject`,
           { method: "POST" },
         );
+        studentsPage();
+      };
+    });
+    host.querySelectorAll("[data-browser-approve]").forEach((button) => {
+      button.onclick = async () => {
+        await api(`/api/browser-requests/${button.dataset.browserApprove}/approve`, { method: "POST" });
+        studentsPage();
+      };
+    });
+    host.querySelectorAll("[data-browser-reject]").forEach((button) => {
+      button.onclick = async () => {
+        await api(`/api/browser-requests/${button.dataset.browserReject}/reject`, { method: "POST" });
         studentsPage();
       };
     });
