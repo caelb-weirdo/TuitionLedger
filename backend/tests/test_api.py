@@ -166,6 +166,41 @@ def test_duplicate_attendance_returns_already_marked(client, monkeypatch):
     assert result.json["data"]["result"] == "Already Marked"
 
 
+def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
+    session = {
+        "id": "550e8400-e29b-41d4-a716-446655440020",
+        "class_id": "550e8400-e29b-41d4-a716-446655440010",
+        "attendance_date": "2026-07-16",
+        "qr_token": QR_TOKEN,
+    }
+
+    def execute(sql, _params):
+        if "select 1 from classes" in sql:
+            return {"owned": True}
+        if "insert into attendance_sessions" in sql:
+            return session
+        return None
+
+    db = FakeDB(execute)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.post(
+        "/api/attendance-sessions",
+        headers=auth_headers(),
+        json={
+            "class_id": "550e8400-e29b-41d4-a716-446655440010",
+            "attendance_date": "2026-07-16",
+            "duration_minutes": 5,
+        },
+    )
+
+    attendance_insert = next(
+        sql.lower() for sql, _params in db.calls if "insert into attendance_records" in sql.lower()
+    )
+    assert result.status_code == 201
+    assert "on conflict(class_id,student_id,attendance_date)" in attendance_insert
+    assert "session_id=excluded.session_id" in attendance_insert
+
+
 def test_registration_approval_generates_student_id(client, monkeypatch):
     student = {"id": "student-1", "student_code": "STU001", "full_name": "Enus Caleb"}
 

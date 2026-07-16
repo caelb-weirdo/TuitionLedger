@@ -54,7 +54,9 @@ def create_session():
         db.execute(
             """insert into attendance_records(session_id,class_id,student_id,attendance_date,status,marked_method)
             select %s,%s,cs.student_id,%s,'Absent','QR' from class_students cs join students s on s.id=cs.student_id
-            where cs.class_id=%s and cs.status='Active' and s.status='Active' on conflict(session_id,student_id) do nothing""",
+            where cs.class_id=%s and cs.status='Active' and s.status='Active'
+            on conflict(class_id,student_id,attendance_date) do update
+            set session_id=excluded.session_id,updated_at=now()""",
             (row["id"], class_id, selected_date, class_id),
         )
         db.commit()

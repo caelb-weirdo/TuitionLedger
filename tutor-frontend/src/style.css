@@ -566,11 +566,11 @@ footer {
 }
 .class-workspaces {
   display: grid;
-  gap: 18px;
+  gap: 10px;
   margin-top: 22px;
 }
 .class-workspace {
-  padding: 24px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: #ffffff08;
@@ -587,7 +587,7 @@ footer {
   justify-content: space-between;
 }
 .class-workspace-header h3 {
-  margin: 10px 0 4px;
+  margin: 6px 0 2px;
 }
 .class-workspace-header p,
 .class-roster-row small,
@@ -599,8 +599,8 @@ footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
   align-items: start;
-  margin-top: 22px;
-  padding-top: 22px;
+  margin-top: 14px;
+  padding: 20px 2px 4px;
   border-top: 1px solid var(--line);
 }
 .class-workspace-grid > section {
@@ -651,9 +651,101 @@ footer {
 .qr-card.compact {
   padding: 14px;
   text-align: center;
+  overflow: hidden;
 }
 .qr-card.compact img {
   width: 190px;
+  max-width: 100%;
+}
+.class-page-intro,
+.class-identity,
+.dialog-heading,
+.qr-status-row,
+.qr-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.class-page-intro h2 {
+  margin-bottom: 4px;
+}
+.class-day {
+  display: grid;
+  flex: 0 0 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid #8f79ef35;
+  border-radius: 14px;
+  background: #8f79ef14;
+  color: #6655c7;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.class-management {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.class-management summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 2px 0;
+  color: #6559b5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+.class-management summary::-webkit-details-marker {
+  display: none;
+}
+.management-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  padding: 24px;
+  border: 1px solid #ffffff80;
+  border-radius: 22px;
+  background: #f6f5ff;
+  color: #23243b;
+  box-shadow: 0 30px 90px #21203f45;
+}
+.management-dialog::backdrop {
+  background: #1d21335e;
+  backdrop-filter: blur(8px);
+}
+.management-dialog h3 {
+  margin: 2px 0 16px;
+  font-size: 26px;
+}
+.icon-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: #3b3d57;
+  font-size: 24px;
+}
+.dialog-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+.qr-status-row {
+  align-items: flex-start;
+}
+.qr-status-row strong {
+  color: #4f4694;
+  font-variant-numeric: tabular-nums;
+}
+.qr-action-row {
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .read-only-enrolment {
   margin: 16px 0;
@@ -680,7 +772,8 @@ footer {
 }
 @media (max-width: 760px) {
   .class-workspace-header,
-  .attendance-history-row {
+  .attendance-history-row,
+  .class-page-intro {
     align-items: flex-start;
     flex-direction: column;
   }

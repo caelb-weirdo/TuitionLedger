@@ -7,21 +7,24 @@ export async function classesPage() {
   shell(
     "classes",
     "Classes",
-    `<section class="page-intro"><p class="kicker">Class control desk</p><h2>Plan the class, enrol the room, start attendance.</h2><p class="muted">Each class owns its schedule, student list, and short-lived attendance QR.</p></section><article class="form-card"><h3 id="class-form-title">Create class</h3><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required></label><div class="card-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button" hidden>Cancel</button></div></form></article><section id="class-list" class="class-workspaces">Loading classes...</section>`,
+    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Open a class only when you need its roster or attendance QR.</p></div><button id="open-class-form" class="button">+ Add class</button></section><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><section id="class-list" class="class-workspaces compact-register">Loading classes...</section>`,
   );
 
   const form = document.querySelector("#class-form");
+  const dialog = document.querySelector("#class-dialog");
   let editingClass = null;
   const resetForm = () => {
     editingClass = null;
     form.reset();
+    dialog.close();
     document.querySelector("#class-form-title").textContent = "Create class";
     form.querySelector(
       'button[type="submit"], button:not([type])',
     ).textContent = "Save class";
-    document.querySelector("#cancel-class-edit").hidden = true;
   };
   document.querySelector("#cancel-class-edit").onclick = resetForm;
+  document.querySelector("#close-class-form").onclick = resetForm;
+  document.querySelector("#open-class-form").onclick = () => dialog.showModal();
   form.onsubmit = async (event) => {
     event.preventDefault();
     try {
@@ -59,7 +62,7 @@ export async function classesPage() {
           const available = students.filter(
             (student) => !enrolled.some((item) => item.id === student.id),
           );
-          return `<article class="class-workspace" data-class="${classItem.id}"><header class="class-workspace-header"><div><span class="status-pill">${esc(classItem.grade)} · ${esc(classItem.subject)}</span><h3>${esc(classItem.class_name)}</h3><p>${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month</p></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${classItem.id}">Edit</button><button class="button button-small danger" data-delete="${classItem.id}">Delete</button></div></header><div class="class-workspace-grid"><section><div class="section-heading"><p class="kicker">Enrolled students</p><h4>${enrolled.length} student${enrolled.length === 1 ? "" : "s"}</h4></div><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><div class="enrol-row"><select data-student-select><option value="">${available.length ? "Choose a student" : "All students enrolled"}</option>${available.map((student) => `<option value="${student.id}">${esc(student.student_code)} · ${esc(student.full_name)}</option>`).join("")}</select><button class="button button-small" data-enrol ${available.length ? "" : "disabled"}>Enrol</button></div></section><section class="session-desk"><div class="section-heading"><p class="kicker">Attendance session</p><h4>Open the room QR</h4></div><form data-session-form class="session-form"><label>Duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button">Generate QR</button></form><div data-session-result class="session-result"><p class="muted">No active session from this screen.</p></div></section></div></article>`;
+          return `<article class="class-workspace" data-class="${classItem.id}"><header class="class-workspace-header"><div class="class-identity"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><div><span class="status-pill">${esc(classItem.grade)} · ${esc(classItem.subject)}</span><h3>${esc(classItem.class_name)}</h3><p>${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month · ${enrolled.length} student${enrolled.length === 1 ? "" : "s"}</p></div></div><div class="card-actions"><button class="button button-small button-ghost" data-edit="${classItem.id}">Edit</button><button class="button button-small danger" data-delete="${classItem.id}">Delete</button></div></header><details class="class-management"><summary>Manage roster & attendance <span aria-hidden="true">⌄</span></summary><div class="class-workspace-grid"><section><div class="section-heading"><p class="kicker">Enrolled students</p><h4>${enrolled.length} student${enrolled.length === 1 ? "" : "s"}</h4></div><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><div class="enrol-row"><select data-student-select><option value="">${available.length ? "Choose a student" : "All students enrolled"}</option>${available.map((student) => `<option value="${student.id}">${esc(student.student_code)} · ${esc(student.full_name)}</option>`).join("")}</select><button class="button button-small" data-enrol ${available.length ? "" : "disabled"}>Enrol</button></div></section><section class="session-desk"><div class="section-heading"><p class="kicker">Attendance session</p><h4>Open the room QR</h4></div><form data-session-form class="session-form"><label>Duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button">Generate QR</button></form><div data-session-result class="session-result"><p class="muted">No active session from this screen.</p></div></section></div></details></article>`;
         })
         .join("") ||
       `<article class="record-card"><h3>No classes yet</h3><p>Create your first class to enrol students and start attendance.</p></article>`;
@@ -82,8 +85,7 @@ export async function classesPage() {
         form.querySelector(
           'button[type="submit"], button:not([type])',
         ).textContent = "Update class";
-        document.querySelector("#cancel-class-edit").hidden = false;
-        form.scrollIntoView({ behavior: "smooth", block: "center" });
+        dialog.showModal();
       };
       card.querySelector("[data-delete]").onclick = async () => {
         if (confirm("Delete this class?")) {
@@ -128,7 +130,7 @@ export async function classesPage() {
           const url = `${studentUrl}/?attendance_token=${encodeURIComponent(session.qr_token)}`;
           const qr = await QRCode.toDataURL(url, { width: 260 });
           const expiresAt = new Date(session.expires_at).getTime();
-          result.innerHTML = `<div class="qr-card compact"><span class="status-pill">Active</span><img src="${qr}" alt="Attendance QR for ${esc(classItemName(classes, classId))}"><p>Students scan with their approved browser.</p><strong data-countdown></strong><button class="button button-small" data-end-session>End session</button></div>`;
+          result.innerHTML = `<div class="qr-card compact"><div class="qr-status-row"><span class="status-pill">Active</span><strong data-countdown></strong></div><img src="${qr}" alt="Attendance QR for ${esc(classItemName(classes, classId))}"><p>Students scan with their approved browser.</p><div class="qr-action-row"><button class="button button-small danger" data-end-session>End session</button></div></div>`;
           const countdown = result.querySelector("[data-countdown]");
           let timer = null;
           const updateCountdown = () => {
