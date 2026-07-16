@@ -63,7 +63,7 @@ function waiting(kind, requestId) {
   shell(
     "REQUEST RECEIVED",
     "Your details are with your tutor.",
-    `<p class="intro">Keep this page available. The status will update after tutor review.</p><section class="status-steps"><div class="status-step complete"><span>✓</span><div><strong>Details sent</strong><small>Your request was received.</small></div></div><div class="status-step active"><span>2</span><div><strong>Tutor review</strong><small>Waiting for approval.</small></div></div><div class="status-step"><span>3</span><div><strong>Ready for attendance</strong><small>Your Student ID appears after approval.</small></div></div></section><p class="status-note">Request reference: ${String(requestId).slice(0, 8)}</p>`,
+    `<p class="intro">Registration submitted successfully. Your tutor can now approve this request from the Students page.</p><section class="status-steps"><div class="status-step complete"><span>✓</span><div><strong>Details received</strong><small>Your request is safely stored.</small></div></div><div class="status-step active"><span>2</span><div><strong>Tutor review</strong><small>Waiting for approval.</small></div></div><div class="status-step"><span>3</span><div><strong>Ready for attendance</strong><small>Your Student ID appears after approval.</small></div></div></section><p class="status-note">Request reference: ${String(requestId).slice(0, 8)}</p>`,
   );
   const poll = async () => {
     if (document.hidden) {
@@ -120,8 +120,8 @@ function result(eyebrow, title, message, kind = "success", retry) {
 function registration() {
   shell(
     "STUDENT REGISTRATION",
-    "Submit your details.",
-    `<p class="intro">Your tutor will review this request before attendance is enabled.</p><form id="registration"><label>Full name<input name="full_name" autocomplete="name" minlength="2" maxlength="160" required placeholder="e.g., A. Kavindu Perera"></label><label>Student phone<input name="student_phone" inputmode="tel" maxlength="12" required placeholder="e.g., +94771234567"></label><label>Guardian name<input name="guardian_name" minlength="2" maxlength="160" required placeholder="e.g., S. Perera"></label><label>Guardian WhatsApp<input name="guardian_whatsapp" inputmode="tel" maxlength="12" required placeholder="e.g., +94771234567"></label><label>Grade<select name="grade" required><option value="">Select grade</option><option>Grade 10</option><option>Grade 11</option></select></label><p id="notice" role="status"></p><button class="primary">Submit Registration</button></form>`,
+    "Student registration",
+    `<p class="intro">Enter the student and guardian details used for class records. Your tutor must approve the request before attendance is enabled.</p><form id="registration"><label>Student full name<input name="full_name" autocomplete="name" minlength="2" maxlength="160" required placeholder="A. Kavindu Perera"><small>Use the name shown on school or class records.</small></label><label>Student mobile number<input name="student_phone" inputmode="tel" maxlength="12" required placeholder="+94771234567"><small>Sri Lankan mobile number in +94 format.</small></label><label>Parent or guardian name<input name="guardian_name" minlength="2" maxlength="160" required placeholder="S. Perera"></label><label>Guardian WhatsApp number<input name="guardian_whatsapp" inputmode="tel" maxlength="12" required placeholder="+94771234567"><small>Used only for tutor-initiated fee reminders.</small></label><label>Current grade<select name="grade" required><option value="">Choose grade</option><option>Grade 10</option><option>Grade 11</option></select></label><div id="notice" role="status" aria-live="polite"></div><button class="primary">Submit registration</button></form>`,
   );
   const form = document.querySelector("#registration");
   form.onsubmit = async (event) => {
@@ -129,8 +129,10 @@ function registration() {
     const button = form.querySelector("button");
     const notice = document.querySelector("#notice");
     button.disabled = true;
-    button.textContent = "Sending registration...";
-    notice.textContent = "Please keep this page open.";
+    button.textContent = "Submitting registration...";
+    notice.className = "submission-status loading";
+    notice.innerHTML =
+      '<span class="mini-spinner" aria-hidden="true"></span><strong>Submitting your registration</strong><small>Please keep this page open.</small>';
     const values = Object.fromEntries(new FormData(form));
     try {
       const request = await api("/api/register-student", {
@@ -145,9 +147,9 @@ function registration() {
       waiting("registration", request.id);
     } catch (error) {
       button.disabled = false;
-      button.textContent = "Submit Registration";
-      notice.textContent = `Registration was not submitted. ${error.message}`;
-      notice.className = "error";
+      button.textContent = "Try submitting again";
+      notice.textContent = `Registration was not submitted: ${error.message}`;
+      notice.className = "submission-status error";
     }
   };
 }

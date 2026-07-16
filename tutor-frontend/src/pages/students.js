@@ -42,9 +42,10 @@ export async function studentsPage() {
   shell(
     "students",
     "Students",
-    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar"><button id="add-student" class="button">Add student</button><button id="registration-qr" class="button button-ghost">Generate registration QR</button><button id="connection-link" class="button button-ghost">Browser connection link</button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><section id="student-content" class="management-records">Loading students...</section>`,
+    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar"><button id="add-student" class="button">Add student</button><button id="registration-qr" class="button button-ghost">Generate registration QR</button><button id="connection-link" class="button button-ghost">Copy browser setup link</button><button id="refresh-students" class="button button-ghost">Refresh requests</button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><p class="muted">Browser setup is for students added manually. Send the link with their assigned Student ID; their approval request will appear here.</p><section id="student-content" class="management-records">Loading students...</section>`,
   );
   document.querySelector("#add-student").onclick = () => studentForm();
+  document.querySelector("#refresh-students").onclick = studentsPage;
   document.querySelector("#connection-link").onclick = () => {
     const tutor = auth()?.user?.id;
     const url = `${studentUrl}/?connect=true&tutor=${encodeURIComponent(tutor || "")}`;
@@ -53,10 +54,16 @@ export async function studentsPage() {
       .querySelector("#student-content")
       .insertAdjacentHTML(
         "afterbegin",
-        msg(`Connection link copied: ${url}`, "success"),
+        msg(
+          "Browser setup link copied. Send it with the student's assigned Student ID.",
+          "success",
+        ),
       );
   };
   document.querySelector("#registration-qr").onclick = async () => {
+    const button = document.querySelector("#registration-qr");
+    button.disabled = true;
+    button.textContent = "Generating QR...";
     try {
       const registration = await api("/api/registration-qr", {
         method: "POST",
@@ -67,13 +74,16 @@ export async function studentsPage() {
         .querySelector("#student-content")
         .insertAdjacentHTML(
           "afterbegin",
-          `<article class="qr-card"><h3>Registration QR · valid 24 hours</h3><img src="${qr}" alt="Registration QR"><p>${esc(url)}</p></article>`,
+          `<article class="qr-card"><h3>Registration QR · valid for 24 hours</h3><img src="${qr}" alt="Registration QR"><p>${esc(url)}</p></article>`,
         );
     } catch (error) {
       document.querySelector("#student-content").innerHTML = msg(
         error.message,
         "error",
       );
+    } finally {
+      button.disabled = false;
+      button.textContent = "Generate registration QR";
     }
   };
 
@@ -189,18 +199,6 @@ export async function studentsPage() {
           students.find((student) => student.id === button.dataset.edit),
         );
     });
-    window.__studentsRefreshTimer = window.setInterval(() => {
-      const search = document.querySelector("#student-search");
-      const busyForm = host.querySelector(".form-card, .qr-card");
-      if (
-        search &&
-        !search.value.trim() &&
-        !busyForm &&
-        document.activeElement !== search
-      ) {
-        studentsPage();
-      }
-    }, 5000);
   } catch (error) {
     document.querySelector("#student-content").innerHTML = msg(
       error.message,
