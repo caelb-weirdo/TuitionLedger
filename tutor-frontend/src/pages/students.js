@@ -20,16 +20,25 @@ function studentForm(id, existing) {
     try {
       await api(id ? `/api/students/${id}` : "/api/students", {
         method: id ? "PUT" : "POST",
-        body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))),
+        body: JSON.stringify(
+          Object.fromEntries(new FormData(event.currentTarget)),
+        ),
       });
       studentsPage();
     } catch (error) {
-      event.currentTarget.insertAdjacentHTML("beforebegin", msg(error.message, "error"));
+      event.currentTarget.insertAdjacentHTML(
+        "beforebegin",
+        msg(error.message, "error"),
+      );
     }
   };
 }
 
 export async function studentsPage() {
+  if (window.__studentsRefreshTimer) {
+    window.clearInterval(window.__studentsRefreshTimer);
+    window.__studentsRefreshTimer = null;
+  }
   shell(
     "students",
     "Students",
@@ -38,15 +47,22 @@ export async function studentsPage() {
   document.querySelector("#add-student").onclick = () => studentForm();
   document.querySelector("#registration-qr").onclick = async () => {
     try {
-      const registration = await api("/api/registration-qr", { method: "POST" });
+      const registration = await api("/api/registration-qr", {
+        method: "POST",
+      });
       const url = `${studentUrl}/?registration_token=${encodeURIComponent(registration.token)}`;
       const qr = await QRCode.toDataURL(url, { width: 240 });
-      document.querySelector("#student-content").insertAdjacentHTML(
-        "afterbegin",
-        `<article class="qr-card"><h3>Registration QR · valid 24 hours</h3><img src="${qr}" alt="Registration QR"><p>${esc(url)}</p></article>`,
-      );
+      document
+        .querySelector("#student-content")
+        .insertAdjacentHTML(
+          "afterbegin",
+          `<article class="qr-card"><h3>Registration QR · valid 24 hours</h3><img src="${qr}" alt="Registration QR"><p>${esc(url)}</p></article>`,
+        );
     } catch (error) {
-      document.querySelector("#student-content").innerHTML = msg(error.message, "error");
+      document.querySelector("#student-content").innerHTML = msg(
+        error.message,
+        "error",
+      );
     }
   };
 
@@ -66,11 +82,16 @@ export async function studentsPage() {
     );
     const classesFor = (studentId) =>
       classes.filter((classItem) =>
-        (rosters.get(classItem.id) || []).some((student) => student.id === studentId),
+        (rosters.get(classItem.id) || []).some(
+          (student) => student.id === studentId,
+        ),
       );
     const pending = requests
       .filter((request) => request.status === "Pending")
-      .map((request) => `<article class="record-card pending"><span class="status-pill">Pending approval</span><h3>${esc(request.full_name)}</h3><p>${esc(request.grade)} · ${esc(request.student_phone)}</p><button class="button button-small" data-approve="${request.id}">Approve</button><button class="button button-small button-ghost" data-reject="${request.id}">Reject</button></article>`)
+      .map(
+        (request) =>
+          `<article class="record-card pending"><span class="status-pill">Pending approval</span><h3>${esc(request.full_name)}</h3><p>${esc(request.grade)} · ${esc(request.student_phone)}</p><button class="button button-small" data-approve="${request.id}">Approve</button><button class="button button-small button-ghost" data-reject="${request.id}">Reject</button></article>`,
+      )
       .join("");
     const approved = students
       .map((student) => {
@@ -79,7 +100,9 @@ export async function studentsPage() {
       })
       .join("");
     const host = document.querySelector("#student-content");
-    host.innerHTML = pending + approved || `<article class="record-card"><h3>No students yet</h3><p>Generate a registration QR or add the first student.</p></article>`;
+    host.innerHTML =
+      pending + approved ||
+      `<article class="record-card"><h3>No students yet</h3><p>Generate a registration QR or add the first student.</p></article>`;
     document.querySelector("#student-search").oninput = (event) => {
       const query = event.target.value.trim().toLowerCase();
       host.querySelectorAll(".record-card").forEach((card) => {
@@ -88,37 +111,63 @@ export async function studentsPage() {
     };
     host.querySelectorAll("[data-approve]").forEach((button) => {
       button.onclick = async () => {
-        await api(`/api/registration-requests/${button.dataset.approve}/approve`, { method: "POST" });
+        await api(
+          `/api/registration-requests/${button.dataset.approve}/approve`,
+          { method: "POST" },
+        );
         studentsPage();
       };
     });
     host.querySelectorAll("[data-reject]").forEach((button) => {
       button.onclick = async () => {
-        await api(`/api/registration-requests/${button.dataset.reject}/reject`, { method: "POST" });
+        await api(
+          `/api/registration-requests/${button.dataset.reject}/reject`,
+          { method: "POST" },
+        );
         studentsPage();
       };
     });
     host.querySelectorAll("[data-delete]").forEach((button) => {
       button.onclick = async () => {
         if (confirm("Delete this student?")) {
-          await api(`/api/students/${button.dataset.delete}`, { method: "DELETE" });
+          await api(`/api/students/${button.dataset.delete}`, {
+            method: "DELETE",
+          });
           studentsPage();
         }
       };
     });
     host.querySelectorAll("[data-reset]").forEach((button) => {
       button.onclick = async () => {
-        await api(`/api/students/${button.dataset.reset}/reset-browser`, { method: "POST" });
+        await api(`/api/students/${button.dataset.reset}/reset-browser`, {
+          method: "POST",
+        });
         studentsPage();
       };
     });
     host.querySelectorAll("[data-edit]").forEach((button) => {
-      button.onclick = () => studentForm(
-        button.dataset.edit,
-        students.find((student) => student.id === button.dataset.edit),
-      );
+      button.onclick = () =>
+        studentForm(
+          button.dataset.edit,
+          students.find((student) => student.id === button.dataset.edit),
+        );
     });
+    window.__studentsRefreshTimer = window.setInterval(() => {
+      const search = document.querySelector("#student-search");
+      const busyForm = host.querySelector(".form-card, .qr-card");
+      if (
+        search &&
+        !search.value.trim() &&
+        !busyForm &&
+        document.activeElement !== search
+      ) {
+        studentsPage();
+      }
+    }, 5000);
   } catch (error) {
-    document.querySelector("#student-content").innerHTML = msg(error.message, "error");
+    document.querySelector("#student-content").innerHTML = msg(
+      error.message,
+      "error",
+    );
   }
 }
