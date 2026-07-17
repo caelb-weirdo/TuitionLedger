@@ -55,7 +55,26 @@ test("filters fee rows by student, class, and payment status", () => {
 });
 
 test("keeps mobile navigation out of desktop document flow", () => {
-  const css = readFileSync(new URL("../src/style.css", import.meta.url), "utf8");
-  assert.match(css, /\.app-shell\s*>\s*\.mobile-navigation\s*{\s*display:\s*none;/);
-  assert.match(css, /@media\s*\(max-width:\s*700px\)[\s\S]*?\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?display:\s*grid;/);
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    css,
+    /\.app-shell\s*>\s*\.mobile-navigation\s*{\s*display:\s*none;/,
+  );
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*700px\)[\s\S]*?\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?display:\s*grid;/,
+  );
+});
+
+test("renders the fee reminder as an accessible WhatsApp icon", () => {
+  const source = readFileSync(
+    new URL("../src/pages/fees.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /const whatsappIcon\s*=\s*`<svg/);
+  assert.match(source, /aria-label="Open prepared WhatsApp reminder"/);
+  assert.doesNotMatch(source, /data-whatsapp>WhatsApp<\/button>/);
 });

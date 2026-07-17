@@ -1250,6 +1250,10 @@ footer {
   background: transparent;
   box-shadow: none;
 }
+.whatsapp-icon svg {
+  width: 19px;
+  height: 19px;
+}
 .row-expander[aria-expanded="true"] svg {
   transform: rotate(90deg);
 }
