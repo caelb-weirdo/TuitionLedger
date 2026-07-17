@@ -920,6 +920,15 @@ footer {
 .app-shell .workspace {
   margin-left: 235px;
 }
+.app-shell > .workspace {
+  max-width: none;
+  width: calc(100% - 235px);
+  padding-inline: clamp(28px, 4vw, 64px);
+}
+.app-shell > aside {
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
 .bulk-enrol {
   margin-top: 22px;
   padding-top: 18px;
@@ -1138,6 +1147,10 @@ footer {
 @media (max-width: 850px) {
   .app-shell .workspace {
     margin-left: 0;
+  }
+  .app-shell > .workspace {
+    width: 100%;
+    padding-inline: clamp(20px, 5vw, 36px);
   }
   .app-shell aside {
     position: static;

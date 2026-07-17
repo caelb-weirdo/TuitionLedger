@@ -99,3 +99,18 @@ test("renders attendance as compact student directory rows", () => {
   assert.match(source, /attendance-directory-head/);
   assert.match(source, /attendance-directory-row record-card/);
 });
+
+test("uses the full desktop width without a sidebar divider", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    css,
+    /\.app-shell\s*>\s*\.workspace\s*{[\s\S]*?max-width:\s*none;[\s\S]*?width:\s*calc\(100%\s*-\s*235px\);/,
+  );
+  assert.match(
+    css,
+    /\.app-shell\s*>\s*aside\s*{[\s\S]*?border-right:\s*0\s*!important;[\s\S]*?box-shadow:\s*none\s*!important;/,
+  );
+});
