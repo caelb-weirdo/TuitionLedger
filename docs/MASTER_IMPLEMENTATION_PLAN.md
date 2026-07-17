@@ -13,6 +13,7 @@
 9. Student registration, browser connection, automatic attendance, permanent states, retry/timeout, and legacy-worker cleanup implemented.
 10. Backend test suite expanded; both frontend production builds verified.
 11. Environment examples and technical documents updated.
+12. HND UI/UX pass adds shared interaction states, accessible dialogs, mobile navigation, attendance summaries, fee filters/totals, and 15-minute QR sessions.
 
 ## Rollback points
 
