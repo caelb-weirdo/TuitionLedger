@@ -134,3 +134,15 @@ test("uses compact shared workspace headers", () => {
     /@media \(max-width:\s*700px\)\s*{[\s\S]*?\.workspace-header\s*{[\s\S]*?padding:\s*12px 16px;[\s\S]*?\.workspace-header h1\s*{[\s\S]*?font-size:\s*26px;/,
   );
 });
+
+test("keeps all five mobile navigation items inside narrow screens", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    css,
+    /\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/,
+  );
+  assert.match(css, /\.mobile-navigation a\s*{[\s\S]*?min-width:\s*0;/);
+});

@@ -1593,7 +1593,7 @@ button:disabled {
     right: 12px;
     bottom: max(12px, env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding: 8px;
     border: 1px solid var(--line);
     border-radius: 20px;
@@ -1603,6 +1603,7 @@ button:disabled {
   }
   .mobile-navigation a {
     display: grid;
+    min-width: 0;
     place-items: center;
     gap: 2px;
     min-height: 50px;
