@@ -55,9 +55,13 @@ def test_money_and_month_are_normalized():
 
 @pytest.mark.parametrize("value", [5, "10"])
 def test_qr_duration_accepts_only_approved_values(value):
-    assert qr_duration(value) in (5, 10)
+    assert qr_duration(value) in (5, 10, 15)
+
+
+def test_qr_duration_accepts_fifteen_minutes():
+    assert qr_duration(15) == 15
 
 
 def test_qr_duration_rejects_other_values():
     with pytest.raises(ValidationError):
-        qr_duration(15)
+        qr_duration(6)

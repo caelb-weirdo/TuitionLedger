@@ -28,7 +28,7 @@ def test_protected_route_rejects_missing_token(client):
     assert client.get("/api/students").status_code == 401
 
 
-@pytest.mark.parametrize("duration", [0, 6, 15, "five"])
+@pytest.mark.parametrize("duration", [0, 6, 16, "five"])
 def test_session_rejects_unapproved_duration(client, duration):
     result = client.post(
         "/api/attendance-sessions",

@@ -142,7 +142,7 @@ def qr_duration(value):
         parsed = int(value)
     except (TypeError, ValueError):
         raise ValidationError("Choose a 5 or 10 minute session.") from None
-    return one_of(parsed, (5, 10), "5 or 10 minute session")
+    return one_of(parsed, (5, 10, 15), "5, 10, or 15 minute session")
 
 
 def attendance_status(value):
