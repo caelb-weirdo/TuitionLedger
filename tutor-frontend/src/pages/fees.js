@@ -115,10 +115,9 @@ export async function feesPage() {
             const result = await api(
               `/api/students/${row.student_id}/fees/${monthInput.value}/whatsapp`,
             );
-            window.open(result.url, "_blank", "noopener");
-            notice.textContent =
-              "Prepared reminder opened. Review it in WhatsApp before sending.";
+            notice.textContent = "Opening the prepared reminder in WhatsApp…";
             notice.className = "form-notice success";
+            window.location.assign(result.url);
           } catch (error) {
             notice.textContent = error.message;
             notice.className = "form-notice error";

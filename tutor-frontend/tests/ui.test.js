@@ -77,4 +77,6 @@ test("renders the fee reminder as an accessible WhatsApp icon", () => {
   assert.match(source, /const whatsappIcon\s*=\s*`<svg/);
   assert.match(source, /aria-label="Open prepared WhatsApp reminder"/);
   assert.doesNotMatch(source, /data-whatsapp>WhatsApp<\/button>/);
+  assert.match(source, /window\.location\.assign\(result\.url\)/);
+  assert.doesNotMatch(source, /window\.open\(result\.url/);
 });
