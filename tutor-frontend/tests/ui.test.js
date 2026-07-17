@@ -114,3 +114,23 @@ test("uses the full desktop width without a sidebar divider", () => {
     /\.app-shell\s*>\s*aside\s*{[\s\S]*?border-right:\s*0\s*!important;[\s\S]*?box-shadow:\s*none\s*!important;/,
   );
 });
+
+test("uses compact shared workspace headers", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(css, /\.workspace-header\s*{[\s\S]*?padding:\s*14px 20px;/);
+  assert.match(
+    css,
+    /\.workspace-header h1\s*{[\s\S]*?font-size:\s*30px;[\s\S]*?line-height:\s*1\.15;/,
+  );
+  assert.match(
+    css,
+    /\.workspace-header \.kicker\s*{[\s\S]*?margin:\s*0 0 6px;/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width:\s*700px\)\s*{[\s\S]*?\.workspace-header\s*{[\s\S]*?padding:\s*12px 16px;[\s\S]*?\.workspace-header h1\s*{[\s\S]*?font-size:\s*26px;/,
+  );
+});
