@@ -1,5 +1,6 @@
 import { api, esc, msg } from "../core/api.js";
 import { shell } from "./layout.js";
+import { confirmDialog } from "../ui.js";
 
 export async function studentDetailPage() {
   const params = new URLSearchParams(location.hash.split("?")[1] || "");
@@ -30,11 +31,30 @@ export async function studentDetailPage() {
       location.hash = `#student?student=${studentId}&month=${event.target.value}`;
     };
     host.querySelector("[data-reset]").onclick = async () => {
+      if (
+        !(await confirmDialog({
+          title: "Replace approved browser?",
+          message:
+            "The current browser will stop working for attendance until a new browser is approved.",
+          confirmLabel: "Reset browser",
+          danger: true,
+        }))
+      )
+        return;
       await api(`/api/students/${studentId}/reset-browser`, { method: "POST" });
       studentDetailPage();
     };
     host.querySelector("[data-archive]").onclick = async () => {
-      if (!confirm("Archive this student?")) return;
+      if (
+        !(await confirmDialog({
+          title: "Archive this student?",
+          message:
+            "Historical attendance and fee records will remain available.",
+          confirmLabel: "Archive student",
+          danger: true,
+        }))
+      )
+        return;
       await api(`/api/students/${studentId}`, { method: "DELETE" });
       location.hash = "#students";
     };

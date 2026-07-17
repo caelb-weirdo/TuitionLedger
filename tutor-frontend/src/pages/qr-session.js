@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { api, esc, msg } from "../core/api.js";
 import { days, studentUrl } from "../core/config.js";
 import { shell } from "./layout.js";
+import { confirmDialog } from "../ui.js";
 
 export async function qrSessionPage() {
   const classId = new URLSearchParams(location.hash.split("?")[1] || "").get(
@@ -17,7 +18,7 @@ export async function qrSessionPage() {
     const classes = await api("/api/classes");
     const classItem = classes.find((item) => item.id === classId);
     if (!classItem) throw new Error("Class not found.");
-    host.innerHTML = `<div class="qr-session-heading"><div><p class="kicker">${esc(classItem.grade)} · ${esc(classItem.subject)}</p><h2>${esc(classItem.class_name)}</h2><p class="muted">${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)}</p></div></div><form id="start-session-form" class="session-launcher"><label>Attendance date<input type="date" name="attendance_date" value="${new Date().toISOString().slice(0, 10)}" required></label><label>Duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><button class="button">Generate QR</button></form><div id="qr-session-result" class="qr-session-stage"><p class="muted">Choose the date and duration, then generate the attendance QR.</p></div>`;
+    host.innerHTML = `<div class="qr-session-heading"><div><p class="kicker">${esc(classItem.grade)} · ${esc(classItem.subject)}</p><h2>${esc(classItem.class_name)}</h2><p class="muted">${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)}</p></div></div><form id="start-session-form" class="session-launcher"><label>Attendance date<input type="date" name="attendance_date" value="${new Date().toISOString().slice(0, 10)}" required></label><label>Duration<select name="duration_minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option></select></label><button class="button">Start attendance</button></form><div id="qr-session-result" class="qr-session-stage"><p class="muted">Choose the date and duration, then start attendance.</p></div>`;
     document.querySelector("#start-session-form").onsubmit = async (event) => {
       event.preventDefault();
       const result = document.querySelector("#qr-session-result");
@@ -48,6 +49,15 @@ export async function qrSessionPage() {
         updateCountdown();
         timer = window.setInterval(updateCountdown, 1000);
         result.querySelector("[data-end-session]").onclick = async () => {
+          if (
+            !(await confirmDialog({
+              title: "End attendance session?",
+              message: "Students will no longer be able to scan this QR code.",
+              confirmLabel: "End session",
+              danger: true,
+            }))
+          )
+            return;
           await api(`/api/attendance-sessions/${session.id}/end`, {
             method: "POST",
           });

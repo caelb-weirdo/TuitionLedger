@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { api, clearApiCache, esc, msg } from "../core/api.js";
 import { studentUrl } from "../core/config.js";
 import { shell } from "./layout.js";
+import { confirmDialog } from "../ui.js";
 
 function studentForm(id, existing) {
   const host = document.querySelector("#student-content");
@@ -120,6 +121,16 @@ export async function studentsPage() {
     });
     host.querySelectorAll("[data-reject]").forEach((button) => {
       button.onclick = async () => {
+        if (
+          !(await confirmDialog({
+            title: "Reject this registration?",
+            message:
+              "The student will see that this registration request was rejected.",
+            confirmLabel: "Reject request",
+            danger: true,
+          }))
+        )
+          return;
         await api(
           `/api/registration-requests/${button.dataset.reject}/reject`,
           { method: "POST" },
@@ -138,6 +149,15 @@ export async function studentsPage() {
     });
     host.querySelectorAll("[data-browser-reject]").forEach((button) => {
       button.onclick = async () => {
+        if (
+          !(await confirmDialog({
+            title: "Reject this browser?",
+            message: "This browser will not be able to record attendance.",
+            confirmLabel: "Reject browser",
+            danger: true,
+          }))
+        )
+          return;
         await api(
           `/api/browser-requests/${button.dataset.browserReject}/reject`,
           { method: "POST" },
@@ -147,7 +167,15 @@ export async function studentsPage() {
     });
     host.querySelectorAll("[data-delete]").forEach((button) => {
       button.onclick = async () => {
-        if (confirm("Delete this student?")) {
+        if (
+          await confirmDialog({
+            title: "Archive this student?",
+            message:
+              "The student will leave active lists while historical attendance and fees remain.",
+            confirmLabel: "Archive student",
+            danger: true,
+          })
+        ) {
           await api(`/api/students/${button.dataset.delete}`, {
             method: "DELETE",
           });
@@ -157,6 +185,16 @@ export async function studentsPage() {
     });
     host.querySelectorAll("[data-reset]").forEach((button) => {
       button.onclick = async () => {
+        if (
+          !(await confirmDialog({
+            title: "Replace approved browser?",
+            message:
+              "The current browser will immediately stop working for attendance until a new request is approved.",
+            confirmLabel: "Reset browser",
+            danger: true,
+          }))
+        )
+          return;
         await api(`/api/students/${button.dataset.reset}/reset-browser`, {
           method: "POST",
         });

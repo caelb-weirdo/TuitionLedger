@@ -1,100 +1,144 @@
 import { api, esc, msg } from "../core/api.js";
+import {
+  attendanceSummary,
+  filterAttendance,
+  formatDate,
+  skeletonRows,
+} from "../ui.js";
 import { shell } from "./layout.js";
 
 export async function attendanceWorkspacePage() {
   shell(
     "attendance",
     "Attendance",
-    `<section class="page-intro"><p class="kicker">Attendance history</p><h2>Review the register and correct a status.</h2><p class="muted">Live QR sessions now start from Classes. This page is the permanent attendance record.</p></section><article class="form-card"><form id="attendance-filter" class="grid-form"><label>Class<select id="attendance-class" required disabled><option value="">Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><button class="button button-ghost" type="button" id="clear-attendance-date">All dates</button></form><p id="attendance-notice" class="form-notice" aria-live="polite"></p></article><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list"><p class="muted">Loading your classes…</p></div></section>`,
+    `<section class="page-intro"><div><p class="kicker">Permanent register</p><h2>Review and correct attendance.</h2><p class="muted">Choose a class, date, or status. Live sessions start from Classes.</p></div></section><section class="filter-bar"><label>Class<select id="attendance-class" disabled><option>Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><label>Status<select id="attendance-status"><option value="">All statuses</option><option>Present</option><option>Absent</option></select></label><button class="button button-ghost" id="clear-attendance" type="button">Clear filters</button></section><p id="attendance-notice" class="form-notice" role="status" aria-live="polite"></p><section id="attendance-summary" class="summary-strip" aria-label="Attendance summary"></section><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list">${skeletonRows()}</div></section><dialog id="correction-dialog" class="management-dialog"><form id="correction-form"><div class="dialog-heading"><div><p class="kicker">Manual correction</p><h3 id="correction-student"></h3></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div><p id="correction-change" class="muted"></p><label>Reason<select name="reason-choice" required><option value="">Choose a reason</option><option>QR scanning problem</option><option>Tutor confirmed attendance</option><option>Student arrived late</option><option>Incorrect record</option><option>Other</option></select></label><label data-other hidden>Other reason<textarea name="other-reason" maxlength="300"></textarea></label><div class="dialog-actions"><button type="button" class="button button-ghost" data-close>Cancel</button><button class="button">Save correction</button></div></form></dialog>`,
   );
-
   const classSelect = document.querySelector("#attendance-class");
   const dateInput = document.querySelector("#attendance-date");
+  const statusSelect = document.querySelector("#attendance-status");
   const listHost = document.querySelector("#attendance-list");
   const notice = document.querySelector("#attendance-notice");
+  const dialog = document.querySelector("#correction-dialog");
   let records = [];
+  let pending = null;
 
-  const render = () => {
-    const visible = dateInput.value
-      ? records.filter((record) => record.attendance_date === dateInput.value)
-      : records;
-    document.querySelector("#attendance-title").textContent =
-      `${visible.length} record${visible.length === 1 ? "" : "s"}${dateInput.value ? ` on ${dateInput.value}` : ""}`;
+  function render() {
+    const visible = filterAttendance(
+      records,
+      dateInput.value,
+      statusSelect.value,
+    );
+    const totals = attendanceSummary(visible);
+    document.querySelector("#attendance-summary").innerHTML =
+      `<article><span>Expected</span><strong>${totals.expected}</strong></article><article><span>Present</span><strong>${totals.present}</strong></article><article><span>Absent</span><strong>${totals.absent}</strong></article><article><span>Attendance</span><strong>${totals.percentage}%</strong></article>`;
+    document.querySelector("#attendance-title").textContent = dateInput.value
+      ? `${visible.length} records · ${formatDate(dateInput.value)}`
+      : `${visible.length} records`;
     listHost.innerHTML =
       visible
         .map(
           (record) =>
-            `<article class="attendance-history-row"><div><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)} · ${esc(record.attendance_date)} · ${esc(record.marked_method)}</small></div><span class="attendance-status ${record.status.toLowerCase()}">${esc(record.status)}</span><div class="attendance-actions"><button class="button button-small ${record.status === "Present" ? "button-ghost" : ""}" data-status="Present" data-record="${record.id}">Present</button><button class="button button-small ${record.status === "Absent" ? "button-ghost" : ""}" data-status="Absent" data-record="${record.id}">Absent</button></div></article>`,
+            `<article class="attendance-history-row"><div><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)} · ${formatDate(record.attendance_date)} · ${esc(record.marked_method)}</small></div><span class="attendance-status ${record.status.toLowerCase()}">${record.status === "Present" ? "✓" : "×"} ${esc(record.status)}</span><button class="button button-small button-ghost" data-record="${record.id}">Change status</button></article>`,
         )
         .join("") ||
-      `<p class="muted">No attendance records match these filters. Start the next QR from Classes.</p>`;
-    listHost.querySelectorAll("[data-record]").forEach((button) => {
-      button.onclick = async () => {
-        const record = records.find(
-          (item) => item.id === button.dataset.record,
-        );
-        const reason = window.prompt("Reason for this manual correction:");
-        if (!reason?.trim()) return;
-        try {
-          await api("/api/attendance/manual", {
-            method: "POST",
-            body: JSON.stringify({
-              session_id: record.session_id,
-              class_id: record.class_id,
-              student_id: record.student_id,
-              status: button.dataset.status,
-              reason: reason.trim(),
-            }),
-          });
-          await loadRecords();
-          notice.textContent = `${record.full_name} marked ${button.dataset.status.toLowerCase()}.`;
-          notice.className = "form-notice success";
-        } catch (error) {
-          notice.textContent = error.message;
-          notice.className = "form-notice error";
-        }
-      };
-    });
-  };
+      '<div class="empty-state"><h3>No attendance records</h3><p>Try clearing the filters or start attendance from Classes.</p></div>';
+    listHost.querySelectorAll("[data-record]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          const record = records.find(
+            (item) => item.id === button.dataset.record,
+          );
+          pending = {
+            record,
+            status: record.status === "Present" ? "Absent" : "Present",
+          };
+          document.querySelector("#correction-student").textContent =
+            record.full_name;
+          document.querySelector("#correction-change").textContent =
+            `${record.status} → ${pending.status}`;
+          dialog.showModal();
+        }),
+    );
+  }
 
-  const loadRecords = async () => {
+  async function loadRecords() {
     if (!classSelect.value) return;
-    listHost.innerHTML = '<p class="muted">Loading attendance…</p>';
+    listHost.innerHTML = skeletonRows();
     try {
-      records = await api(`/api/attendance/classes/${classSelect.value}`);
+      records = await api(`/api/attendance/classes/${classSelect.value}`, {
+        force: true,
+      });
       render();
     } catch (error) {
-      listHost.innerHTML = msg(error.message, "error");
+      listHost.innerHTML = `${msg(error.message, "error")}<button class="button" id="retry-attendance">Retry</button>`;
+      document.querySelector("#retry-attendance").onclick = loadRecords;
+    }
+  }
+
+  document
+    .querySelectorAll("[data-close]")
+    .forEach((button) => (button.onclick = () => dialog.close()));
+  const reasonChoice = document.querySelector('[name="reason-choice"]');
+  reasonChoice.onchange = () => {
+    document.querySelector("[data-other]").hidden =
+      reasonChoice.value !== "Other";
+  };
+  document.querySelector("#correction-form").onsubmit = async (event) => {
+    event.preventDefault();
+    const other = event.currentTarget.elements["other-reason"].value.trim();
+    const reason = reasonChoice.value === "Other" ? other : reasonChoice.value;
+    if (!reason || reason.length < 3) {
+      notice.textContent = "Enter a reason of at least 3 characters.";
+      notice.className = "form-notice error";
+      return;
+    }
+    const submit = event.submitter;
+    submit.disabled = true;
+    try {
+      await api("/api/attendance/manual", {
+        method: "POST",
+        body: JSON.stringify({
+          session_id: pending.record.session_id,
+          class_id: pending.record.class_id,
+          student_id: pending.record.student_id,
+          status: pending.status,
+          reason,
+        }),
+      });
+      dialog.close();
+      event.currentTarget.reset();
+      await loadRecords();
+      notice.textContent = `${pending.record.full_name} marked ${pending.status.toLowerCase()}.`;
+      notice.className = "form-notice success";
+    } catch (error) {
+      notice.textContent = error.message;
+      notice.className = "form-notice error";
+    } finally {
+      submit.disabled = false;
     }
   };
-
-  dateInput.onchange = render;
-  document.querySelector("#clear-attendance-date").onclick = () => {
+  [dateInput, statusSelect].forEach((control) => (control.onchange = render));
+  document.querySelector("#clear-attendance").onclick = () => {
     dateInput.value = "";
+    statusSelect.value = "";
     render();
   };
   classSelect.onchange = loadRecords;
-
   try {
     const classes = await api("/api/classes");
     classSelect.innerHTML = classes.length
       ? classes
           .map(
             (item) =>
-              `<option value="${item.id}">${esc(item.grade)} · ${esc(item.subject)} · ${esc(item.class_name)}</option>`,
+              `<option value="${item.id}">${esc(item.grade)} · ${esc(item.class_name)}</option>`,
           )
           .join("")
       : '<option value="">No classes available</option>';
     classSelect.disabled = !classes.length;
-    notice.textContent = classes.length
-      ? "Filter by class and date. Corrections are saved as manual updates."
-      : "Create a class first.";
     if (classes.length) await loadRecords();
     else render();
   } catch (error) {
-    classSelect.innerHTML = '<option value="">Unable to load classes</option>';
-    notice.textContent = error.message;
-    notice.className = "form-notice error";
+    classSelect.innerHTML = "<option>Unable to load classes</option>";
     listHost.innerHTML = msg(error.message, "error");
   }
 }

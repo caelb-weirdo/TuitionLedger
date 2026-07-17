@@ -1,6 +1,7 @@
 import { api, esc, msg } from "../core/api.js";
 import { days, subjects } from "../core/config.js";
 import { shell } from "./layout.js";
+import { confirmDialog } from "../ui.js";
 
 export async function classesPage() {
   shell(
@@ -104,7 +105,15 @@ export async function classesPage() {
         dialog.showModal();
       };
       content.querySelector("[data-delete]").onclick = async () => {
-        if (confirm("Delete this class?")) {
+        if (
+          await confirmDialog({
+            title: "Archive this class?",
+            message:
+              "The class will leave active lists, but its attendance and fee history will remain.",
+            confirmLabel: "Archive class",
+            danger: true,
+          })
+        ) {
           await api(`/api/classes/${classItem.id}`, { method: "DELETE" });
           classesPage();
         }
@@ -154,6 +163,16 @@ export async function classesPage() {
       };
       content.querySelectorAll("[data-remove-student]").forEach((remove) => {
         remove.onclick = async () => {
+          if (
+            !(await confirmDialog({
+              title: "Remove this student?",
+              message:
+                "The student record remains available, but they will no longer belong to this class.",
+              confirmLabel: "Remove student",
+              danger: true,
+            }))
+          )
+            return;
           await api(
             `/api/classes/${classItem.id}/students/${remove.dataset.removeStudent}`,
             { method: "DELETE" },
