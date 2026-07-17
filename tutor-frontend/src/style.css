@@ -127,35 +127,63 @@ button {
   transform: rotate(-3deg);
   box-shadow: 0 30px 70px #000a;
 }
+.laptop > small,
+.phone > small {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+  font-size: 12px;
+}
 .screen {
   padding: 18px;
   border-radius: 12px;
-  background: #101817;
+  background: #091211;
+  border: 1px solid rgba(69, 196, 154, 0.2);
   min-height: 280px;
 }
 .mini-top {
   display: flex;
   justify-content: space-between;
-  color: var(--muted);
-  font-size: 12px;
+  color: #ffffff;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+.mini-top strong {
+  color: var(--gold);
+}
+.mini-top span {
+  color: var(--silver);
+  font-weight: 500;
 }
 .mini-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 .mini-grid div {
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
 }
 .mini-grid b,
 .mini-grid small {
   display: block;
 }
+.mini-grid b {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
 .mini-grid small {
-  color: var(--muted);
+  color: #cfded6;
+  font-size: 11px;
+  margin-top: 4px;
 }
 .mini-chart {
   display: flex;
@@ -197,10 +225,29 @@ button {
   min-height: 300px;
   padding: 16px;
   border-radius: 19px;
-  background: #173b31;
+  background: #0d2821;
+  border: 1px solid rgba(69, 196, 154, 0.2);
   text-align: center;
   display: grid;
   place-items: center;
+}
+.phone-screen .mini-label {
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+.phone-screen h3 {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+.phone-screen p {
+  color: #e7ece8;
+  font-size: 12px;
+  margin: 4px 0 0 0;
 }
 .phone-speaker {
   width: 50px;
@@ -212,11 +259,15 @@ button {
 .check {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  color: var(--green);
-  background: #45c49a22;
+  color: #ffffff;
+  background: var(--green);
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(69, 196, 154, 0.5);
+  margin: 8px auto;
 }
 .status-pill {
   display: inline-block;
@@ -982,6 +1033,57 @@ footer {
 .student-directory-row small {
   color: var(--muted);
 }
+.student-workspace-section {
+  margin-top: 28px;
+}
+.student-workspace-section.panel {
+  padding: 22px;
+}
+.student-section-heading,
+.approval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.student-section-heading h2 {
+  margin: 4px 0;
+  font-size: 26px;
+}
+.student-section-heading .muted {
+  margin: 0;
+  font-size: 14px;
+}
+.approved-student-heading {
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.registration-qr-output .qr-card {
+  width: min(100%, 520px);
+  margin-top: 18px;
+}
+.registration-qr-output .qr-card img {
+  width: 220px;
+}
+.approval-list {
+  display: grid;
+  gap: 8px;
+}
+.approval-row.record-card {
+  min-height: 74px;
+  padding: 12px 16px;
+}
+.approval-row > span:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.approval-row small {
+  color: var(--muted);
+}
+.empty-state.compact {
+  padding: 18px;
+}
 .student-directory {
   display: grid;
   gap: 8px;
@@ -1057,6 +1159,20 @@ footer {
 .student-detail-page {
   display: grid;
   gap: 18px;
+}
+.registration-request-page {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+.registration-request-head {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #ffffff70;
+}
+.registration-request-details > div {
+  min-width: 0;
 }
 .student-record-head,
 .student-month-bar,
@@ -1170,6 +1286,20 @@ footer {
   }
   .workspace-header h1 {
     font-size: 26px;
+  }
+  .student-section-heading,
+  .approval-row,
+  .approved-student-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .student-section-heading .data-toolbar,
+  .approval-row .card-actions {
+    width: 100%;
+  }
+  .student-section-heading .data-toolbar input {
+    flex: 1;
+    min-width: 0;
   }
   .student-directory-head {
     display: none;

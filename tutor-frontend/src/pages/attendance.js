@@ -11,7 +11,7 @@ export async function attendanceWorkspacePage() {
   shell(
     "attendance",
     "Attendance",
-    `<section class="page-intro"><div><p class="kicker">Permanent register</p><h2>Review and correct attendance.</h2><p class="muted">Choose a class, date, or status. Live sessions start from Classes.</p></div></section><section class="filter-bar"><label>Class<select id="attendance-class" disabled><option>Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><label>Status<select id="attendance-status"><option value="">All statuses</option><option>Present</option><option>Absent</option></select></label><button class="button button-ghost" id="clear-attendance" type="button">Clear filters</button></section><p id="attendance-notice" class="form-notice" role="status" aria-live="polite"></p><section id="attendance-summary" class="summary-strip" aria-label="Attendance summary"></section><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list">${skeletonRows()}</div></section><dialog id="correction-dialog" class="management-dialog"><form id="correction-form"><div class="dialog-heading"><div><p class="kicker">Manual correction</p><h3 id="correction-student"></h3></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div><p id="correction-change" class="muted"></p><label>Reason<select name="reason-choice" required><option value="">Choose a reason</option><option>QR scanning problem</option><option>Tutor confirmed attendance</option><option>Student arrived late</option><option>Incorrect record</option><option>Other</option></select></label><label data-other hidden>Other reason<textarea name="other-reason" maxlength="300"></textarea></label><div class="dialog-actions"><button type="button" class="button button-ghost" data-close>Cancel</button><button class="button">Save correction</button></div></form></dialog>`,
+    `<section class="page-intro"><div><p class="kicker">Permanent register</p><h2>Review and correct attendance.</h2><p class="muted">Choose a class, date, or status. Live sessions start from Classes.</p></div></section><section class="filter-bar"><label>Class<select id="attendance-class" disabled><option>Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><label>Status<select id="attendance-status"><option value="">All statuses</option><option>Present</option><option>Absent</option></select></label><button class="button button-ghost" id="clear-attendance" type="button">Clear filters</button></section><p id="attendance-notice" class="form-notice" role="status" aria-live="polite"></p><section id="attendance-summary" class="summary-strip" aria-label="Attendance summary"></section><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list">${skeletonRows()}</div></section><dialog id="correction-dialog" class="management-dialog"><form id="correction-form"><div class="dialog-heading"><div><p class="kicker">Manual correction</p><h3 id="correction-student"></h3></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div><p id="correction-change" class="muted"></p><label>Reason<select name="reason-choice" required><option value="">Choose a reason</option><option>QR scanning problem</option><option>Tutor confirmed attendance</option><option>Student arrived late</option><option>Incorrect record</option><option>Other</option></select></label><label data-other hidden>Other reason<textarea name="other-reason" maxlength="300"></textarea></label><p id="correction-notice" class="form-notice" role="status" aria-live="polite"></p><div class="dialog-actions"><button type="button" class="button button-ghost" data-close>Cancel</button><button class="button">Save correction</button></div></form></dialog>`,
   );
   const classSelect = document.querySelector("#attendance-class");
   const dateInput = document.querySelector("#attendance-date");
@@ -19,6 +19,9 @@ export async function attendanceWorkspacePage() {
   const listHost = document.querySelector("#attendance-list");
   const notice = document.querySelector("#attendance-notice");
   const dialog = document.querySelector("#correction-dialog");
+  const correctionForm = document.querySelector("#correction-form");
+  const dialogNotice = document.querySelector("#correction-notice");
+  const otherReasonLabel = document.querySelector("[data-other]");
   let records = [];
   let pending = null;
 
@@ -56,6 +59,10 @@ export async function attendanceWorkspacePage() {
             record.full_name;
           document.querySelector("#correction-change").textContent =
             `${record.status} → ${pending.status}`;
+          correctionForm.reset();
+          otherReasonLabel.hidden = true;
+          dialogNotice.textContent = "";
+          dialogNotice.className = "form-notice";
           dialog.showModal();
         }),
     );
@@ -80,39 +87,44 @@ export async function attendanceWorkspacePage() {
     .forEach((button) => (button.onclick = () => dialog.close()));
   const reasonChoice = document.querySelector('[name="reason-choice"]');
   reasonChoice.onchange = () => {
-    document.querySelector("[data-other]").hidden =
-      reasonChoice.value !== "Other";
+    otherReasonLabel.hidden = reasonChoice.value !== "Other";
   };
-  document.querySelector("#correction-form").onsubmit = async (event) => {
+  correctionForm.onsubmit = async (event) => {
     event.preventDefault();
-    const other = event.currentTarget.elements["other-reason"].value.trim();
+    const form = event.currentTarget;
+    const correction = pending;
+    const other = form.elements["other-reason"].value.trim();
     const reason = reasonChoice.value === "Other" ? other : reasonChoice.value;
     if (!reason || reason.length < 3) {
-      notice.textContent = "Enter a reason of at least 3 characters.";
-      notice.className = "form-notice error";
+      dialogNotice.textContent = "Enter a reason of at least 3 characters.";
+      dialogNotice.className = "form-notice error";
       return;
     }
-    const submit = event.submitter;
+    const submit = event.submitter || form.querySelector('button:not([type="button"])');
     submit.disabled = true;
+    dialogNotice.textContent = "Saving correction…";
+    dialogNotice.className = "form-notice";
     try {
       await api("/api/attendance/manual", {
         method: "POST",
         body: JSON.stringify({
-          session_id: pending.record.session_id,
-          class_id: pending.record.class_id,
-          student_id: pending.record.student_id,
-          status: pending.status,
+          session_id: correction.record.session_id,
+          class_id: correction.record.class_id,
+          student_id: correction.record.student_id,
+          status: correction.status,
           reason,
         }),
       });
+      form.reset();
+      otherReasonLabel.hidden = true;
       dialog.close();
-      event.currentTarget.reset();
       await loadRecords();
-      notice.textContent = `${pending.record.full_name} marked ${pending.status.toLowerCase()}.`;
+      notice.textContent = `${correction.record.full_name} marked ${correction.status.toLowerCase()}.`;
       notice.className = "form-notice success";
+      pending = null;
     } catch (error) {
-      notice.textContent = error.message;
-      notice.className = "form-notice error";
+      dialogNotice.textContent = error.message;
+      dialogNotice.className = "form-notice error";
     } finally {
       submit.disabled = false;
     }

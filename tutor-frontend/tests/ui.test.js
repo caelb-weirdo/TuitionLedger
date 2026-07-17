@@ -146,3 +146,63 @@ test("keeps all five mobile navigation items inside narrow screens", () => {
   );
   assert.match(css, /\.mobile-navigation a\s*{[\s\S]*?min-width:\s*0;/);
 });
+
+test("refreshes approved students without replacing QR or approvals", () => {
+  const source = readFileSync(
+    new URL("../src/pages/students.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /id="registration-qr-output"/);
+  assert.match(source, /id="approval-content"/);
+  assert.match(source, /id="approved-student-content"/);
+  assert.match(source, /async function refreshApprovedStudents\(\)/);
+  assert.match(
+    source,
+    /querySelector\("#refresh-approved-students"\)\.onclick\s*=\s*refreshApprovedStudents/,
+  );
+  assert.doesNotMatch(
+    source,
+    /querySelector\("#refresh-approved-students"\)\.onclick\s*=\s*\(\)\s*=>\s*{[\s\S]*?studentsPage\(\)/,
+  );
+});
+
+test("routes pending registrations to a full review page", () => {
+  const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
+  const students = readFileSync(
+    new URL("../src/pages/students.js", import.meta.url),
+    "utf8",
+  );
+  const detail = readFileSync(
+    new URL("../src/pages/registration-request.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(main, /"registration-request":\s*registrationRequestPage/);
+  assert.match(students, /#registration-request\?request=\$\{request\.id\}/);
+  assert.match(detail, /export async function registrationRequestPage\(\)/);
+  for (const field of [
+    "Student phone",
+    "Guardian name",
+    "Guardian WhatsApp",
+    "Grade",
+    "Status",
+    "Submitted",
+  ]) {
+    assert.match(detail, new RegExp(field));
+  }
+  assert.match(detail, /data-approve-request/);
+  assert.match(detail, /data-reject-request/);
+});
+
+test("keeps attendance correction form state valid across async requests", () => {
+  const source = readFileSync(
+    new URL("../src/pages/attendance.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /id="correction-notice"/);
+  assert.match(source, /const form = event\.currentTarget;/);
+  assert.match(source, /dialogNotice\.textContent = error\.message;/);
+  assert.doesNotMatch(
+    source,
+    /await api\("\/api\/attendance\/manual"[\s\S]*?event\.currentTarget\.reset\(\)/,
+  );
+});
