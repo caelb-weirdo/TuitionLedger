@@ -15,10 +15,6 @@ export async function studentDetailPage() {
   );
   const host = document.querySelector("#student-detail");
   try {
-    await api("/api/fees/ensure", {
-      method: "POST",
-      body: JSON.stringify({ month }),
-    });
     const summary = await api(
       `/api/students/${studentId}/monthly-summary?month=${encodeURIComponent(month)}`,
     );
@@ -29,38 +25,10 @@ export async function studentDetailPage() {
 
   function render(summary) {
     const student = summary.student;
-    const hasFees = summary.fees.length > 0;
-    const unpaid = hasFees && summary.payment_status === "Unpaid";
-    const selectedDate = new Date(`${month}-01T00:00:00`);
-    const today = new Date();
-    const lastDay = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth() + 1,
-      0,
-    ).getDate();
-    const urgent =
-      today.getFullYear() === selectedDate.getFullYear() &&
-      today.getMonth() === selectedDate.getMonth() &&
-      today.getDate() > lastDay - 5;
-    host.innerHTML = `<header class="student-record-head"><div><span class="status-pill">${esc(student.student_code)}</span><h2>${esc(student.full_name)}</h2><p>${esc(student.grade)} · ${esc(student.browser_status)}</p></div><div class="card-actions"><button class="button button-small button-ghost" data-edit>Edit</button><button class="button button-small button-ghost" data-reset>Reset browser</button><button class="button button-small danger" data-archive>Archive</button></div></header><section class="student-contact-grid"><div><small>Student phone</small><strong>${esc(student.student_phone)}</strong></div><div><small>Guardian</small><strong>${esc(student.guardian_name)}</strong></div><div><small>Guardian WhatsApp</small><strong>${esc(student.guardian_whatsapp)}</strong></div></section><div class="student-month-bar"><label>Month<input id="student-month" type="month" value="${month}"></label><div><small>Amount due</small><strong>Rs. ${esc(summary.combined_amount)}</strong></div><button class="payment-toggle ${unpaid ? "is-unpaid" : "is-paid"}" data-payment ${hasFees ? "" : "disabled"}>${hasFees ? esc(summary.payment_status) : "No fees"}</button>${unpaid ? `<button class="whatsapp-fee ${urgent ? "urgent" : ""}" data-whatsapp aria-label="Send WhatsApp fee reminder">WhatsApp reminder</button>` : ""}</div><section class="student-insight-grid"><article><p class="kicker">Monthly fees</p><details open><summary>${summary.fees.length} class fee${summary.fees.length === 1 ? "" : "s"}</summary>${summary.fees.map((fee) => `<div class="detail-line"><span>${esc(fee.class_name)}</span><strong>Rs. ${esc(fee.amount)} · ${esc(fee.status)}</strong></div>`).join("") || '<p class="muted">No active class fees for this month.</p>'}</details></article><article><p class="kicker">Monthly attendance</p><div class="attendance-totals"><span><strong>${summary.present}</strong>Present</span><span><strong>${summary.absent}</strong>Absent</span><span><strong>${summary.attendance_rate}%</strong>Rate</span></div><details><summary>View class and date breakdown</summary>${summary.attendance.map((record) => `<div class="detail-line"><span>${esc(record.class_name)}<small>${esc(record.attendance_date)}</small></span><strong class="attendance-${record.status.toLowerCase()}">${esc(record.status)}</strong></div>`).join("") || '<p class="muted">No attendance records for this month.</p>'}</details></article></section><dialog id="edit-student-dialog" class="management-dialog"><div class="dialog-heading"><h3>Edit student</h3><button class="icon-button" data-close-edit aria-label="Close">&times;</button></div><form id="detail-student-form" class="grid-form"><label>Full name<input name="full_name" value="${esc(student.full_name)}" required></label><label>Student phone<input name="student_phone" value="${esc(student.student_phone)}" required></label><label>Guardian name<input name="guardian_name" value="${esc(student.guardian_name)}" required></label><label>Guardian WhatsApp<input name="guardian_whatsapp" value="${esc(student.guardian_whatsapp)}" required></label><label>Grade<select name="grade"><option ${student.grade === "Grade 10" ? "selected" : ""}>Grade 10</option><option ${student.grade === "Grade 11" ? "selected" : ""}>Grade 11</option></select></label><button class="button">Save changes</button></form></dialog>`;
+    host.innerHTML = `<header class="student-record-head"><div><span class="status-pill">${esc(student.student_code)}</span><h2>${esc(student.full_name)}</h2><p>${esc(student.grade)} · ${esc(student.browser_status)}</p></div><div class="card-actions"><button class="icon-action" data-edit aria-label="Edit student" data-tooltip="Edit student"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.8 4 4-.8L18 8.4 15.6 6 4 16Z"/></svg></button><button class="icon-action" data-reset aria-label="Reset browser" data-tooltip="Reset browser"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8m16 8-2.2 1.8A7 7 0 0 1 5.5 15"/></svg></button><button class="icon-action danger" data-archive aria-label="Archive student" data-tooltip="Archive student"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 11v6M15 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div></header><section class="student-contact-grid"><div><small>Student phone</small><strong>${esc(student.student_phone)}</strong></div><div><small>Guardian</small><strong>${esc(student.guardian_name)}</strong></div><div><small>Guardian WhatsApp</small><strong>${esc(student.guardian_whatsapp)}</strong></div></section><div class="attendance-month-control"><label>Attendance month<input id="student-month" type="month" value="${month}"></label></div><section class="student-insight-grid attendance-only"><article><p class="kicker">Monthly attendance</p><div class="attendance-totals"><span><strong>${summary.present}</strong>Present</span><span><strong>${summary.absent}</strong>Absent</span><span><strong>${summary.attendance_rate}%</strong>Rate</span></div><details><summary>View class and date breakdown</summary>${summary.attendance.map((record) => `<div class="detail-line"><span>${esc(record.class_name)}<small>${esc(record.attendance_date)}</small></span><strong class="attendance-${record.status.toLowerCase()}">${esc(record.status)}</strong></div>`).join("") || '<p class="muted">No attendance records for this month.</p>'}</details></article></section><dialog id="edit-student-dialog" class="management-dialog"><div class="dialog-heading"><h3>Edit student</h3><button class="icon-button" data-close-edit aria-label="Close">&times;</button></div><form id="detail-student-form" class="grid-form"><label>Full name<input name="full_name" value="${esc(student.full_name)}" required></label><label>Student phone<input name="student_phone" value="${esc(student.student_phone)}" required></label><label>Guardian name<input name="guardian_name" value="${esc(student.guardian_name)}" required></label><label>Guardian WhatsApp<input name="guardian_whatsapp" value="${esc(student.guardian_whatsapp)}" required></label><label>Grade<select name="grade"><option ${student.grade === "Grade 10" ? "selected" : ""}>Grade 10</option><option ${student.grade === "Grade 11" ? "selected" : ""}>Grade 11</option></select></label><button class="button">Save changes</button></form></dialog>`;
     document.querySelector("#student-month").onchange = (event) => {
       location.hash = `#student?student=${studentId}&month=${event.target.value}`;
     };
-    host.querySelector("[data-payment]").onclick = async () => {
-      await api(`/api/students/${studentId}/fees/${month}`, {
-        method: "PUT",
-        body: JSON.stringify({ status: unpaid ? "Paid" : "Unpaid" }),
-      });
-      studentDetailPage();
-    };
-    host
-      .querySelector("[data-whatsapp]")
-      ?.addEventListener("click", async () => {
-        const result = await api(
-          `/api/students/${studentId}/fees/${month}/whatsapp`,
-        );
-        window.open(result.url, "_blank", "noopener");
-      });
     host.querySelector("[data-reset]").onclick = async () => {
       await api(`/api/students/${studentId}/reset-browser`, { method: "POST" });
       studentDetailPage();

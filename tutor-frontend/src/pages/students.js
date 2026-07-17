@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { api, auth, esc, msg } from "../core/api.js";
+import { api, clearApiCache, esc, msg } from "../core/api.js";
 import { studentUrl } from "../core/config.js";
 import { shell } from "./layout.js";
 
@@ -42,28 +42,16 @@ export async function studentsPage() {
   shell(
     "students",
     "Students",
-    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar"><button id="add-student" class="button">Add student</button><button id="registration-qr" class="button button-ghost">Generate registration QR</button><button id="connection-link" class="button button-ghost">Copy browser setup link</button><button id="refresh-students" class="button button-ghost">Refresh requests</button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><p class="muted">Browser setup is for students added manually. Send the link with their assigned Student ID; their approval request will appear here.</p><section id="student-content" class="management-records">Loading students...</section>`,
+    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Approved students receive IDs such as STU001 and one trusted browser. Manage enrollment from Classes.</p></section><div class="data-toolbar icon-toolbar"><button id="add-student" class="icon-action primary" aria-label="Add student" data-tooltip="Add student"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="registration-qr" class="icon-action" aria-label="Generate registration QR" data-tooltip="Generate registration QR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 14h2v2h-2zM19 14h1v6h-6v-2h4v-2h-3z"/></svg></button><button id="refresh-students" class="icon-action" aria-label="Refresh requests" data-tooltip="Refresh requests"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8m16 8-2.2 1.8A7 7 0 0 1 5.5 15"/></svg></button><input id="student-search" type="search" placeholder="Search students" aria-label="Search students"></div><section id="student-content" class="management-records">Loading students...</section>`,
   );
   document.querySelector("#add-student").onclick = () => studentForm();
-  document.querySelector("#refresh-students").onclick = studentsPage;
-  document.querySelector("#connection-link").onclick = () => {
-    const tutor = auth()?.user?.id;
-    const url = `${studentUrl}/?connect=true&tutor=${encodeURIComponent(tutor || "")}`;
-    navigator.clipboard?.writeText(url);
-    document
-      .querySelector("#student-content")
-      .insertAdjacentHTML(
-        "afterbegin",
-        msg(
-          "Browser setup link copied. Send it with the student's assigned Student ID.",
-          "success",
-        ),
-      );
+  document.querySelector("#refresh-students").onclick = () => {
+    clearApiCache();
+    studentsPage();
   };
   document.querySelector("#registration-qr").onclick = async () => {
     const button = document.querySelector("#registration-qr");
     button.disabled = true;
-    button.textContent = "Generating QR...";
     try {
       const registration = await api("/api/registration-qr", {
         method: "POST",
@@ -83,7 +71,6 @@ export async function studentsPage() {
       );
     } finally {
       button.disabled = false;
-      button.textContent = "Generate registration QR";
     }
   };
 

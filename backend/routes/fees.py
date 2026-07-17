@@ -40,6 +40,25 @@ def fees():
     return response([dict(row) for row in rows])
 
 
+@fee_routes.get("/api/fees/ledger")
+@auth_required
+def fee_ledger():
+    month = fee_month(request.args.get("month"))
+    with database() as db:
+        rows = db.execute(
+            """select s.id as student_id,s.student_code,s.full_name,s.grade,
+            count(f.id)::int as class_count,coalesce(sum(f.amount),0) as combined_amount,
+            case when bool_and(f.status='Paid') then 'Paid' else 'Unpaid' end as payment_status,
+            json_agg(json_build_object('id',f.id,'class_id',f.class_id,'class_name',c.class_name,
+              'amount',f.amount,'status',f.status) order by c.class_name) as fees
+            from fee_records f join students s on s.id=f.student_id join classes c on c.id=f.class_id
+            where f.tutor_id=%s and f.month=%s and s.status='Active'
+            group by s.id,s.student_code,s.full_name,s.grade order by s.full_name""",
+            (tutor_id(), month),
+        ).fetchall()
+    return response([dict(row) for row in rows])
+
+
 @fee_routes.post("/api/fees/generate")
 @auth_required
 def generate_fees():

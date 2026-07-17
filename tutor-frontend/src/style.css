@@ -1129,6 +1129,206 @@ footer {
     width: 100%;
   }
 }
+.icon-toolbar {
+  position: relative;
+}
+.icon-action,
+.row-expander,
+.whatsapp-icon {
+  position: relative;
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border: 1px solid #ffffffb8;
+  border-radius: 12px;
+  background: #ffffffa0;
+  color: #4f4a80;
+  box-shadow: 0 7px 18px #716b9c14;
+}
+.icon-action.primary {
+  background: #625df4;
+  color: #fff;
+}
+.icon-action.danger {
+  background: #ef627c;
+  color: #fff;
+}
+.icon-action svg,
+.row-expander svg,
+.whatsapp-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+[data-tooltip]::after {
+  position: absolute;
+  z-index: 30;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: #28273c;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: 0.15s ease;
+  white-space: nowrap;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.fee-page-intro,
+.fee-ledger-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fee-ledger-controls input,
+.fee-ledger-controls select {
+  min-width: 150px;
+}
+.fee-ledger {
+  overflow-x: auto;
+  border: 1px solid #ffffffa8;
+  border-radius: 18px;
+  background: #ffffff70;
+  box-shadow: 0 18px 50px #6c679515;
+}
+.fee-ledger-head,
+.fee-ledger-row {
+  display: grid;
+  grid-template-columns: 40px minmax(190px, 1.8fr) 110px 80px 120px 130px 80px;
+  gap: 12px;
+  min-width: 850px;
+  align-items: center;
+}
+.fee-ledger-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #eeedfaed;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fee-ledger-head button {
+  grid-column: 2;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+.fee-ledger-row {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.fee-ledger-record:last-child .fee-ledger-row {
+  border-bottom: 0;
+}
+.row-expander {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.row-expander[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+.fee-student {
+  display: grid;
+}
+.fee-student small {
+  color: var(--muted);
+}
+.payment-switch {
+  display: inline-flex;
+  width: 112px;
+  padding: 5px 9px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.payment-switch span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px #0002;
+}
+.payment-switch.unpaid {
+  background: #f5c0ca;
+  color: #7f2639;
+}
+.payment-switch.paid {
+  flex-direction: row-reverse;
+  background: #bcebd9;
+  color: #1e7258;
+}
+.whatsapp-icon {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #25d366;
+  color: #083c1b;
+  box-shadow: none;
+}
+.fee-breakdown {
+  padding: 10px 16px 14px 68px;
+  border-bottom: 1px solid var(--line);
+  background: #f8f7ff99;
+}
+.fee-breakdown > div {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 130px 90px;
+  gap: 12px;
+  min-width: 600px;
+  padding: 8px 0;
+}
+.empty-ledger {
+  padding: 30px;
+  color: var(--muted);
+  text-align: center;
+}
+.attendance-month-control {
+  display: flex;
+  justify-content: flex-end;
+}
+.attendance-only {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 900px) {
+  .fee-page-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .fee-ledger-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
 .auth-shell {
   position: relative;
   overflow: hidden;

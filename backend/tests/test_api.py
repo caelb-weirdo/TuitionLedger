@@ -304,3 +304,24 @@ def test_fee_ensure_is_idempotent_insert(client, monkeypatch):
     )
     assert result.status_code == 200
     assert "on conflict(student_id,class_id,month) do nothing" in insert
+
+
+def test_fee_ledger_returns_one_row_per_student(client, monkeypatch):
+    ledger = [
+        {
+            "student_id": "student-1",
+            "student_code": "STU001",
+            "full_name": "Enus Caleb",
+            "grade": "Grade 11",
+            "class_count": 2,
+            "combined_amount": "5500.00",
+            "payment_status": "Unpaid",
+            "fees": [],
+        }
+    ]
+    db = FakeDB(lambda sql, _params: ledger if "json_agg" in sql else None)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.get("/api/fees/ledger?month=2026-07", headers=auth_headers())
+    assert result.status_code == 200
+    assert len(result.json["data"]) == 1
+    assert result.json["data"][0]["combined_amount"] == "5500.00"
