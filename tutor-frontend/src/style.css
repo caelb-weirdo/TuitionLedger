@@ -1474,7 +1474,7 @@ button:disabled {
   color: #fff;
   font-size: 0.7rem;
 }
-.mobile-navigation {
+.app-shell > .mobile-navigation {
   display: none;
 }
 .attendance-status.present {
@@ -1513,7 +1513,7 @@ button:disabled {
   .workspace {
     padding-bottom: 104px;
   }
-  .mobile-navigation {
+  .app-shell > .mobile-navigation {
     position: fixed;
     z-index: 50;
     left: 12px;

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   attendanceSummary,
   filterAttendance,
@@ -51,4 +52,10 @@ test("filters fee rows by student, class, and payment status", () => {
     }),
     [rows[0]],
   );
+});
+
+test("keeps mobile navigation out of desktop document flow", () => {
+  const css = readFileSync(new URL("../src/style.css", import.meta.url), "utf8");
+  assert.match(css, /\.app-shell\s*>\s*\.mobile-navigation\s*{\s*display:\s*none;/);
+  assert.match(css, /@media\s*\(max-width:\s*700px\)[\s\S]*?\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?display:\s*grid;/);
 });
