@@ -21,10 +21,6 @@
 
 <div align="center"><sub>The Frosted Touch landing experience: one calm workspace for tutors and one trusted browser flow for students.</sub></div>
 
-![Classes control desk](docs/assets/classes-control-desk.png)
-
-<div align="center"><sub>Classes is the single control desk for schedules, enrollment, and short-lived attendance QR sessions.</sub></div>
-
 ---
 
 ## Product overview
