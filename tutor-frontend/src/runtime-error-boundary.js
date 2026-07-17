@@ -6,7 +6,10 @@ function showRuntimeError() {
   notice.setAttribute("role", "alert");
   notice.textContent =
     "This section could not load. Please check your connection and try again.";
-  app.prepend(notice);
+  const workspace = app.querySelector(".workspace");
+  const workspaceHeader = workspace?.querySelector(".workspace-header");
+  if (workspaceHeader) workspaceHeader.after(notice);
+  else (app.querySelector(".auth-shell") || app).prepend(notice);
 }
 window.addEventListener(
   "error",

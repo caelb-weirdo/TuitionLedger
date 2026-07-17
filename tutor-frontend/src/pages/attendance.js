@@ -34,14 +34,14 @@ export async function attendanceWorkspacePage() {
     document.querySelector("#attendance-title").textContent = dateInput.value
       ? `${visible.length} records · ${formatDate(dateInput.value)}`
       : `${visible.length} records`;
-    listHost.innerHTML =
-      visible
-        .map(
-          (record) =>
-            `<article class="attendance-history-row"><div><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)} · ${formatDate(record.attendance_date)} · ${esc(record.marked_method)}</small></div><span class="attendance-status ${record.status.toLowerCase()}">${record.status === "Present" ? "✓" : "×"} ${esc(record.status)}</span><button class="button button-small button-ghost" data-record="${record.id}">Change status</button></article>`,
-        )
-        .join("") ||
-      '<div class="empty-state"><h3>No attendance records</h3><p>Try clearing the filters or start attendance from Classes.</p></div>';
+    listHost.innerHTML = visible.length
+      ? `<div class="attendance-directory"><div class="attendance-directory-head"><span>Student</span><span>Date and method</span><span>Status</span><span></span></div>${visible
+          .map(
+            (record) =>
+              `<article class="attendance-directory-row record-card"><span class="attendance-student"><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)}</small></span><span class="attendance-meta">${formatDate(record.attendance_date)}<small>${esc(record.marked_method)}</small></span><span class="attendance-status ${record.status.toLowerCase()}">${record.status === "Present" ? "✓" : "×"} ${esc(record.status)}</span><button class="button button-small button-ghost" data-record="${record.id}">Change</button></article>`,
+          )
+          .join("")}</div>`
+      : '<div class="empty-state"><h3>No attendance records</h3><p>Try clearing the filters or start attendance from Classes.</p></div>';
     listHost.querySelectorAll("[data-record]").forEach(
       (button) =>
         (button.onclick = () => {

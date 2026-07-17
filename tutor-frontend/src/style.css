@@ -989,6 +989,50 @@ footer {
 .student-directory-row.record-card {
   padding: 14px 16px;
 }
+.attendance-directory {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.attendance-directory-head,
+.attendance-directory-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 110px 86px;
+  gap: 14px;
+  align-items: center;
+}
+.attendance-directory-head {
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.attendance-directory-row.record-card {
+  min-height: 62px;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+.attendance-student,
+.attendance-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.attendance-student strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attendance-student small,
+.attendance-meta small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.attendance-directory-row .button {
+  width: 86px;
+}
 .view-student {
   color: #6559b5;
   font-size: 13px;
@@ -1565,6 +1609,21 @@ button:disabled {
   .attendance-history-row .button {
     grid-column: 1 / -1;
     width: 100%;
+  }
+  .attendance-directory-head {
+    display: none;
+  }
+  .attendance-directory-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .attendance-directory-row .attendance-meta {
+    grid-column: 1;
+  }
+  .attendance-directory-row .button {
+    grid-column: 2;
+    grid-row: 2;
+    width: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {

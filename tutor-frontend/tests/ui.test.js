@@ -80,3 +80,22 @@ test("renders the fee reminder as an accessible WhatsApp icon", () => {
   assert.match(source, /window\.location\.assign\(result\.url\)/);
   assert.doesNotMatch(source, /window\.open\(result\.url/);
 });
+
+test("places global runtime errors inside the visible workspace", () => {
+  const source = readFileSync(
+    new URL("../src/runtime-error-boundary.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /app\.querySelector\("\.workspace"\)/);
+  assert.match(source, /workspaceHeader\.after\(notice\)/);
+  assert.doesNotMatch(source, /app\.prepend\(notice\)/);
+});
+
+test("renders attendance as compact student directory rows", () => {
+  const source = readFileSync(
+    new URL("../src/pages/attendance.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /attendance-directory-head/);
+  assert.match(source, /attendance-directory-row record-card/);
+});
