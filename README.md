@@ -336,7 +336,8 @@ git diff --check
 - [ ] WhatsApp click-to-chat contains the correct student and amount.
 - [ ] Tutor manifest, icons, service worker and install support load successfully.
 - [ ] Student query pages do not register, remove or offer a service worker.
-- [ ] Tutor and Student flows work from the same frontend deployment.
+- [ ] Tutor and Student flows work from the same frontend deployment.\r
+- [ ] A Grade 11 student cannot be enrolled in a Grade 10 class, and vice versa.
 
 ## Production deployment
 

@@ -103,12 +103,14 @@ export async function classesPage() {
 
     function renderManager(classItem, enrolled, allStudents) {
       const available = allStudents.filter(
-        (student) => !enrolled.some((item) => item.id === student.id),
+        (student) =>
+          student.grade === classItem.grade &&
+          !enrolled.some((item) => item.id === student.id),
       );
       document.querySelector("#manage-class-title").textContent =
         classItem.class_name;
       const content = document.querySelector("#manage-class-content");
-      content.innerHTML = `<p class="muted class-detail-line">${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month</p><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><section class="bulk-enrol"><div class="bulk-enrol-head"><div><p class="kicker">Available students</p><strong><span data-selected-count>0</span> selected</strong></div><input data-student-search type="search" placeholder="Search name or Student ID" aria-label="Search available students"></div><div class="bulk-enrol-tools"><label><input type="checkbox" data-select-all> Select all available</label><button class="text-button" type="button" data-clear-selection>Clear</button></div><div class="student-check-list">${available.map((student) => `<label class="student-check-row"><input type="checkbox" value="${student.id}" data-student-check><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)} · ${esc(student.grade)}</small></span></label>`).join("") || '<p class="muted">All active students are already enrolled.</p>'}</div><button class="button" data-enrol-selected ${available.length ? "" : "disabled"}>Enrol selected students</button></section><div class="dialog-footer"><button class="button button-small button-ghost" data-edit>Edit details</button><button class="button button-small danger" data-delete>Delete class</button></div>`;
+      content.innerHTML = `<p class="muted class-detail-line">${esc(days[classItem.day])} · ${esc(classItem.start_time)}–${esc(classItem.end_time)} · Rs. ${esc(classItem.monthly_fee)}/month</p><div class="class-roster">${enrolled.map((student) => `<div class="class-roster-row"><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)}</small></span><button class="button button-small button-ghost" data-remove-student="${student.id}">Remove</button></div>`).join("") || '<p class="muted">No students enrolled yet.</p>'}</div><section class="bulk-enrol"><div class="bulk-enrol-head"><div><p class="kicker">Available students</p><strong><span data-selected-count>0</span> selected</strong></div><input data-student-search type="search" placeholder="Search name or Student ID" aria-label="Search available students"></div><div class="bulk-enrol-tools"><label><input type="checkbox" data-select-all> Select all available</label><button class="text-button" type="button" data-clear-selection>Clear</button></div><div class="student-check-list">${available.map((student) => `<label class="student-check-row"><input type="checkbox" value="${student.id}" data-student-check><span><strong>${esc(student.full_name)}</strong><small>${esc(student.student_code)} · ${esc(student.grade)}</small></span></label>`).join("") || `<p class="muted">No available ${esc(classItem.grade)} students for this class.</p>`}</div><button class="button" data-enrol-selected ${available.length ? "" : "disabled"}>Enrol selected students</button></section><div class="dialog-footer"><button class="button button-small button-ghost" data-edit>Edit details</button><button class="button button-small danger" data-delete>Delete class</button></div>`;
       content.querySelector("[data-edit]").onclick = () => {
         manageDialog.close();
         editingClass = classItem;
@@ -175,7 +177,7 @@ export async function classesPage() {
         );
         sessionStorage.setItem(
           "tuitionledger:enrol-notice",
-          `${outcome.enrolled} enrolled, ${outcome.already_enrolled} already enrolled, ${outcome.failed.length} failed.`,
+          `${outcome.enrolled} enrolled, ${outcome.already_enrolled} already enrolled, ${outcome.wrong_grade?.length || 0} wrong grade, ${outcome.failed.length} failed.`,
         );
         classesPage();
       };

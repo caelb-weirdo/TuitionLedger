@@ -129,9 +129,20 @@ def scan():
                 403,
             )
         enrolled = db.execute(
-            "select 1 from class_students where class_id=%s and student_id=%s and status='Active'",
+            """select cs.id, c.grade as class_grade, s.grade as student_grade
+            from class_students cs
+            join classes c on c.id=cs.class_id
+            join students s on s.id=cs.student_id
+            where cs.class_id=%s and cs.student_id=%s and cs.status='Active'
+              and c.status='Active' and s.status='Active'""",
             (session["class_id"], student["id"]),
         ).fetchone()
+        if enrolled and enrolled["student_grade"] != enrolled["class_grade"]:
+            return response(
+                {"result": "Wrong Grade"},
+                "Your grade does not match this class.",
+                403,
+            )
         if not enrolled:
             return response(
                 {"result": "Not Enrolled"}, "You are not enrolled in this class.", 403

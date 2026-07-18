@@ -155,11 +155,17 @@ def enroll_student(class_id):
     )
     with database() as db:
         owned = db.execute(
-            "select 1 from classes c join students s on s.tutor_id=c.tutor_id where c.id=%s and s.id=%s and c.tutor_id=%s and c.status='Active' and s.status='Active'",
+            """select c.grade as class_grade, s.grade as student_grade
+            from classes c join students s on s.tutor_id=c.tutor_id
+            where c.id=%s and s.id=%s and c.tutor_id=%s and c.status='Active' and s.status='Active'""",
             (class_id, student_id, tutor_id()),
         ).fetchone()
         if not owned:
             return response(message="Student or class not found.", status=404)
+        if owned["student_grade"] != owned["class_grade"]:
+            return response(
+                message="Student grade does not match this class grade.", status=422
+            )
         row = db.execute(
             """insert into class_students(class_id,student_id,status) values(%s,%s,'Active')
             on conflict(class_id,student_id) do update set status='Active',enrolled_at=now()
@@ -186,27 +192,30 @@ def enroll_students_bulk(class_id):
     )
     with database() as db:
         owned_class = db.execute(
-            "select 1 from classes where id=%s and tutor_id=%s and status='Active'",
+            "select id,grade from classes where id=%s and tutor_id=%s and status='Active'",
             (class_id, tutor_id()),
         ).fetchone()
         if not owned_class:
             return response(message="Class not found.", status=404)
+        class_grade = owned_class["grade"]
         valid_rows = db.execute(
-            "select id from students where id=any(%s::uuid[]) and tutor_id=%s and status='Active'",
+            "select id,grade from students where id=any(%s::uuid[]) and tutor_id=%s and status='Active'",
             (student_ids, tutor_id()),
         ).fetchall()
         valid_ids = [str(row["id"]) for row in valid_rows]
         failed = [value for value in student_ids if value not in valid_ids]
+        same_grade = [str(row["id"]) for row in valid_rows if row["grade"] == class_grade]
+        wrong_grade = [str(row["id"]) for row in valid_rows if row["grade"] != class_grade]
         existing_rows = (
             db.execute(
                 "select student_id from class_students where class_id=%s and student_id=any(%s::uuid[]) and status='Active'",
-                (class_id, valid_ids),
+                (class_id, same_grade),
             ).fetchall()
-            if valid_ids
+            if same_grade
             else []
         )
         existing = {str(row["student_id"]) for row in existing_rows}
-        changed = [value for value in valid_ids if value not in existing]
+        changed = [value for value in same_grade if value not in existing]
         rows = (
             db.execute(
                 """insert into class_students(class_id,student_id,status)
@@ -223,9 +232,10 @@ def enroll_students_bulk(class_id):
         {
             "enrolled": len(rows),
             "already_enrolled": len(existing),
+            "wrong_grade": wrong_grade,
             "failed": failed,
         },
-        "Selected students enrolled.",
+        "Selected students processed.",
     )
 
 

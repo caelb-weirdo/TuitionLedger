@@ -387,3 +387,12 @@ test("uses one frontend project for tutor and student flows", () => {
     false,
   );
 });
+
+test("classes page filters available students by grade", () => {
+  const source = readFileSync(
+    new URL("../src/pages/classes.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /student\.grade === classItem\.grade/);
+  assert.match(source, /No available.*students for this class/);
+});

@@ -152,7 +152,11 @@ def test_duplicate_attendance_returns_already_marked(client, monkeypatch):
         if "students where browser_id" in sql:
             return {"id": "student-1"}
         if "class_students" in sql:
-            return {"student_id": "student-1"}
+            return {
+                "student_id": "student-1",
+                "class_grade": "Grade 10",
+                "student_grade": "Grade 10",
+            }
         if "update attendance_records" in sql:
             return None
         if "select * from attendance_records" in sql:
@@ -240,12 +244,14 @@ def test_bulk_enrollment_accepts_multiple_students(client, monkeypatch):
     ]
 
     def execute(sql, _params):
-        if "select 1 from classes" in sql:
-            return {"owned": True}
-        if "select id from students" in sql:
-            return [{"id": value} for value in student_ids]
-        if "insert into class_students" in sql:
-            return [{"student_id": value, "inserted": True} for value in student_ids]
+        if "classes" in sql:
+            return {"id": "class-1", "grade": "Grade 11"}
+        if "class_students" in sql:
+            if "insert" in sql:
+                return [{"student_id": value, "inserted": True} for value in student_ids]
+            return []
+        if "students" in sql:
+            return [{"id": value, "grade": "Grade 11"} for value in student_ids]
         return None
 
     db = FakeDB(execute)
@@ -503,3 +509,163 @@ def test_registration_qr_removes_old_expired_tokens(client, monkeypatch):
     assert result.status_code == 201
     assert "delete from registration_tokens" in db.calls[0][0].lower()
     assert "interval '7 days'" in db.calls[0][0].lower()
+
+
+# --- Grade-mismatch enrollment tests ---
+
+
+def test_single_enroll_same_grade_succeeds(client, monkeypatch):
+    def execute(sql, _params):
+        if "class_grade" in sql:
+            return {"class_grade": "Grade 11", "student_grade": "Grade 11"}
+        if "insert into class_students" in sql:
+            return {"id": "cs-1", "class_id": "class-1", "student_id": "student-1"}
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students",
+        headers=auth_headers(),
+        json={"student_id": "550e8400-e29b-41d4-a716-446655440031"},
+    )
+    assert result.status_code == 201
+    assert result.json["message"] == "Student enrolled."
+
+
+def test_single_enroll_wrong_grade_returns_422(client, monkeypatch):
+    def execute(sql, _params):
+        if "class_grade" in sql:
+            return {"class_grade": "Grade 10", "student_grade": "Grade 11"}
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students",
+        headers=auth_headers(),
+        json={"student_id": "550e8400-e29b-41d4-a716-446655440031"},
+    )
+    assert result.status_code == 422
+    assert "grade does not match" in result.json["message"].lower()
+def test_single_enroll_missing_returns_404(client, monkeypatch):
+    monkeypatch.setattr(
+        api_app, "database", lambda: FakeDB(lambda _sql, _params: None)
+    )
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students",
+        headers=auth_headers(),
+        json={"student_id": "550e8400-e29b-41d4-a716-446655440031"},
+    )
+    assert result.status_code == 404
+
+
+def test_single_enroll_already_enrolled_returns_409(client, monkeypatch):
+    def execute(sql, _params):
+        if "class_grade" in sql:
+            return {"class_grade": "Grade 11", "student_grade": "Grade 11"}
+        if "insert into class_students" in sql:
+            return None
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students",
+        headers=auth_headers(),
+        json={"student_id": "550e8400-e29b-41d4-a716-446655440031"},
+    )
+    assert result.status_code == 409
+
+
+def test_bulk_enroll_filters_wrong_grade_students(client, monkeypatch):
+    same_id = "550e8400-e29b-41d4-a716-446655440031"
+    wrong_id = "550e8400-e29b-41d4-a716-446655440032"
+
+    def execute(sql, _params):
+        if "select id,grade from classes" in sql:
+            return {"id": "class-1", "grade": "Grade 10"}
+        if "select id,grade from students" in sql:
+            return [
+                {"id": same_id, "grade": "Grade 10"},
+                {"id": wrong_id, "grade": "Grade 11"},
+            ]
+        if "select student_id from class_students" in sql:
+            return []
+        if "insert into class_students" in sql:
+            return [{"student_id": same_id}]
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students/bulk",
+        headers=auth_headers(),
+        json={"student_ids": [same_id, wrong_id]},
+    )
+    assert result.status_code == 200
+    assert result.json["data"]["enrolled"] == 1
+    assert wrong_id in result.json["data"]["wrong_grade"]
+    assert result.json["data"]["failed"] == []
+
+
+def test_bulk_enroll_mixed_request(client, monkeypatch):
+    same_id = "550e8400-e29b-41d4-a716-446655440031"
+    wrong_id = "550e8400-e29b-41d4-a716-446655440032"
+    existing_id = "550e8400-e29b-41d4-a716-446655440033"
+    invalid_id = "550e8400-e29b-41d4-a716-446655440034"
+
+    def execute(sql, _params):
+        if "select id,grade from classes" in sql:
+            return {"id": "class-1", "grade": "Grade 10"}
+        if "select id,grade from students" in sql:
+            return [
+                {"id": same_id, "grade": "Grade 10"},
+                {"id": wrong_id, "grade": "Grade 11"},
+                {"id": existing_id, "grade": "Grade 10"},
+            ]
+        if "select student_id from class_students" in sql:
+            return [{"student_id": existing_id}]
+        if "insert into class_students" in sql:
+            return [{"student_id": same_id}]
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030/students/bulk",
+        headers=auth_headers(),
+        json={"student_ids": [same_id, wrong_id, existing_id, invalid_id]},
+    )
+    data = result.json["data"]
+    assert data["enrolled"] == 1
+    assert data["already_enrolled"] == 1
+    assert wrong_id in data["wrong_grade"]
+    assert invalid_id in data["failed"]
+
+
+def test_attendance_scan_rejects_wrong_grade_enrollment(client, monkeypatch):
+    now = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    def execute(sql, _params):
+        if "attendance_sessions" in sql:
+            return {
+                "id": "session-1",
+                "class_id": "class-1",
+                "tutor_id": "tutor-1",
+                "status": "Active",
+                "expires_at": now,
+                "attendance_date": "2026-07-18",
+            }
+        if "students where browser_id" in sql:
+            return {"id": "student-1"}
+        if "class_students cs" in sql:
+            return {
+                "id": "cs-1",
+                "class_grade": "Grade 10",
+                "student_grade": "Grade 11",
+            }
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.post(
+        "/api/attendance/scan", json={"qr_token": QR_TOKEN, "browser_id": BROWSER_ID}
+    )
+    assert result.status_code == 403
+    assert result.json["data"]["result"] == "Wrong Grade"
+    assert "grade does not match" in result.json["message"].lower()

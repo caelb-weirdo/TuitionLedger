@@ -27,8 +27,8 @@ All JSON responses use `{ "success": true, "data": ... }` or `{ "success": false
 | GET/POST | `/api/classes` | Tutor | List Active classes with `student_count`, or create a validated weekly class. |
 | GET | `/api/classes/:id` | Tutor | Load one owned Active class for the attendance-session screen. |
 | PUT/DELETE | `/api/classes/:id` | Tutor | Edit or archive an owned class. |
-| GET/POST | `/api/classes/:id/students` | Tutor | List or enroll owned Active students. |
-| POST | `/api/classes/:id/students/bulk` | Tutor | Replace the Active roster with a validated list of owned Active students. |
+| GET/POST | `/api/classes/:id/students` | Tutor | List or enroll owned Active students. Students may only be enrolled in classes matching their registered grade (422 on mismatch). |
+| POST | `/api/classes/:id/students/bulk` | Tutor | Enroll a validated list of owned Active students. Wrong-grade students are rejected and returned in a `wrong_grade` array. |
 | DELETE | `/api/classes/:id/students/:student_id` | Tutor | Mark enrollment Removed. |
 | POST | `/api/attendance-sessions` | Tutor | Owned class, date, exactly 5/10/15 minutes; ends old session and creates default Absent rows atomically. |
 | POST | `/api/attendance-sessions/:id/end` | Tutor | End an owned Active session immediately. |
@@ -39,4 +39,4 @@ All JSON responses use `{ "success": true, "data": ... }` or `{ "success": false
 | PUT | `/api/students/:id/fees/:month` | Tutor | Update all owned fee rows for one student and month to Paid or Unpaid. |
 | GET | `/api/students/:id/fees/:month/whatsapp` | Tutor | Generate a DB-derived, URL-encoded WhatsApp reminder for unpaid class fees. |
 
-Expected status families are `200/201`, `401`, `403`, `404`, `409`, `410`, `422`, `500`, and `503`. Known database conflicts are translated to readable messages rather than returning SQL details.
+Expected status families are `200/201`, `401`, `403`, `404`, `409`, `410`, `422`, `500`, and `503`. Known database conflicts are translated to readable messages rather than returning SQL details. Grade-mismatch enrollment returns `422`.
