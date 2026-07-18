@@ -100,7 +100,8 @@ export async function attendanceWorkspacePage() {
       dialogNotice.className = "form-notice error";
       return;
     }
-    const submit = event.submitter || form.querySelector('button:not([type="button"])');
+    const submit =
+      event.submitter || form.querySelector('button:not([type="button"])');
     submit.disabled = true;
     dialogNotice.textContent = "Saving correction…";
     dialogNotice.className = "form-notice";

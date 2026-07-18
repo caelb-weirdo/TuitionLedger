@@ -19,14 +19,14 @@
 - Archive-based student/class history retention.
 - Server-validated attendance expiry, enrolment, and duplicate-scan rules.
 - One fee record per student, class, and month.
-- Tutor installable PWA and non-installable responsive student website.
+- Tutor installable PWA and non-installable responsive student query pages in one frontend deployment.
 
 ## Verification
 
 - Backend: `python -m pytest backend/tests -q`
 - Tutor UI unit tests: `npm --prefix tutor-frontend test`
 - Tutor build: `npm --prefix tutor-frontend run build`
-- Student build: `npm --prefix student-mobile run build`
+- Combined Tutor + Student build: `npm --prefix tutor-frontend run build`
 - Browser smoke checks: 360px and 390px landing/auth/attendance/fees routes with mocked authenticated API responses.
 
 Production deployment, remote database changes, and live two-browser acceptance testing are intentionally excluded until separately authorized.

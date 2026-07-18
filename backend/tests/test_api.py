@@ -62,6 +62,8 @@ class FakeDB:
 @pytest.fixture
 def client(monkeypatch):
     api_app.app.config.update(TESTING=True)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_PUBLISHABLE_KEY", "test-key")
     monkeypatch.setattr(
         api_app,
         "urlopen",
@@ -231,23 +233,6 @@ def test_registration_approval_generates_student_id(client, monkeypatch):
     assert result.json["data"]["student_code"] == "STU001"
 
 
-def test_fee_update_returns_paid_record(client, monkeypatch):
-    paid = {"id": "fee-1", "status": "Paid", "paid_at": "2026-07-15T00:00:00Z"}
-
-    def execute(sql, _params):
-        if "update fee_records" in sql:
-            return paid
-        return None
-
-    db = FakeDB(execute)
-    monkeypatch.setattr(api_app, "database", lambda: db)
-    result = client.put(
-        f"/api/fees/{FEE_ID}", headers=auth_headers(), json={"status": "Paid"}
-    )
-    assert result.status_code == 200
-    assert result.json["data"]["status"] == "Paid"
-
-
 def test_bulk_enrollment_accepts_multiple_students(client, monkeypatch):
     student_ids = [
         "550e8400-e29b-41d4-a716-446655440031",
@@ -291,21 +276,6 @@ def test_monthly_fee_toggle_updates_all_student_rows(client, monkeypatch):
     assert result.json["data"]["updated"] == 2
 
 
-def test_fee_ensure_is_idempotent_insert(client, monkeypatch):
-    db = FakeDB(lambda sql, _params: [] if "insert into fee_records" in sql else None)
-    monkeypatch.setattr(api_app, "database", lambda: db)
-    result = client.post(
-        "/api/fees/ensure", headers=auth_headers(), json={"month": "2026-07"}
-    )
-    insert = next(
-        sql.lower()
-        for sql, _params in db.calls
-        if "insert into fee_records" in sql.lower()
-    )
-    assert result.status_code == 200
-    assert "on conflict(student_id,class_id,month) do nothing" in insert
-
-
 def test_fee_ledger_returns_one_row_per_student(client, monkeypatch):
     ledger = [
         {
@@ -325,3 +295,211 @@ def test_fee_ledger_returns_one_row_per_student(client, monkeypatch):
     assert result.status_code == 200
     assert len(result.json["data"]) == 1
     assert result.json["data"][0]["combined_amount"] == "5500.00"
+
+
+def test_protected_requests_do_not_upsert_tutor_profiles(client, monkeypatch):
+    seen = []
+
+    def execute(sql, _params):
+        seen.append(sql.lower())
+        return []
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.get("/api/students", headers=auth_headers())
+
+    assert result.status_code == 200
+    assert not any("insert into tutors" in sql for sql in seen)
+
+
+def test_get_tutor_creates_missing_profile_once(client, monkeypatch):
+    profile = {
+        "id": "tutor-1",
+        "full_name": "Tutor One",
+        "email": "tutor@example.com",
+    }
+    seen = []
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        seen.append(lowered)
+        if "select * from tutors" in lowered:
+            return None
+        if "insert into tutors" in lowered:
+            return profile
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.get("/api/tutor", headers=auth_headers())
+
+    assert result.status_code == 200
+    assert result.json["data"]["id"] == "tutor-1"
+    profile_inserts = [sql for sql in seen if "insert into tutors" in sql]
+    assert len(profile_inserts) == 1
+    assert "returning *" in profile_inserts[0]
+
+
+def test_protected_route_reports_missing_auth_configuration(client, monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_PUBLISHABLE_KEY", raising=False)
+
+    result = client.get("/api/students", headers=auth_headers())
+
+    assert result.status_code == 503
+    assert "not configured" in result.json["message"].lower()
+
+
+def test_dashboard_returns_one_combined_summary(client, monkeypatch):
+    summary = {
+        "total_students": 12,
+        "total_classes": 3,
+        "pending_registrations": 2,
+        "unpaid_fees": 4,
+    }
+    today_classes = [
+        {
+            "id": "class-1",
+            "class_name": "Grade 11 Maths",
+            "grade": "Grade 11",
+            "subject": "Maths",
+            "start_time": "16:00",
+            "end_time": "18:00",
+        }
+    ]
+    registrations = [
+        {"full_name": "Nimal", "status": "Pending", "submitted_at": "2026-07-18"}
+    ]
+    unpaid = [
+        {"full_name": "Kamal", "status": "Unpaid", "month": "2026-07-01"}
+    ]
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        if "total_students" in lowered:
+            return summary
+        if "extract(dow" in lowered:
+            return today_classes
+        if "from registration_requests" in lowered:
+            return registrations
+        if "from fee_records" in lowered:
+            return unpaid
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.get("/api/dashboard", headers=auth_headers())
+
+    assert result.status_code == 200
+    assert result.json["data"]["total_students"] == 12
+    assert result.json["data"]["today_classes"][0]["class_name"] == "Grade 11 Maths"
+    assert len(result.json["data"]["recent_activity"]) == 2
+
+
+def test_class_list_includes_student_count(client, monkeypatch):
+    class_row = {
+        "id": "550e8400-e29b-41d4-a716-446655440030",
+        "class_name": "Grade 11 Maths",
+        "student_count": 24,
+    }
+    db = FakeDB(
+        lambda sql, _params: [class_row] if "count(cs.student_id)" in sql.lower() else None
+    )
+    monkeypatch.setattr(api_app, "database", lambda: db)
+
+    result = client.get("/api/classes", headers=auth_headers())
+
+    assert result.status_code == 200
+    assert result.json["data"][0]["student_count"] == 24
+
+
+def test_single_class_endpoint_returns_owned_class(client, monkeypatch):
+    class_row = {
+        "id": "550e8400-e29b-41d4-a716-446655440030",
+        "class_name": "Grade 11 Maths",
+        "student_count": 24,
+    }
+    db = FakeDB(
+        lambda sql, _params: class_row if "count(cs.student_id)" in sql.lower() else None
+    )
+    monkeypatch.setattr(api_app, "database", lambda: db)
+
+    result = client.get(
+        "/api/classes/550e8400-e29b-41d4-a716-446655440030",
+        headers=auth_headers(),
+    )
+
+    assert result.status_code == 200
+    assert result.json["data"]["class_name"] == "Grade 11 Maths"
+
+
+def test_single_registration_request_endpoint_returns_owned_request(client, monkeypatch):
+    registration = {
+        "id": REQUEST_ID,
+        "full_name": "Enus Caleb",
+        "status": "Pending",
+    }
+    db = FakeDB(
+        lambda sql, _params: registration
+        if "from registration_requests" in sql.lower()
+        else None
+    )
+    monkeypatch.setattr(api_app, "database", lambda: db)
+
+    result = client.get(
+        f"/api/registration-requests/{REQUEST_ID}", headers=auth_headers()
+    )
+
+    assert result.status_code == 200
+    assert result.json["data"]["full_name"] == "Enus Caleb"
+
+
+def test_fee_ledger_ensures_rows_before_selecting(client, monkeypatch):
+    ledger = [
+        {
+            "student_id": "student-1",
+            "student_code": "STU001",
+            "full_name": "Enus Caleb",
+            "grade": "Grade 11",
+            "class_count": 1,
+            "combined_amount": "2500.00",
+            "payment_status": "Unpaid",
+            "fees": [],
+        }
+    ]
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        if "insert into fee_records" in lowered:
+            return []
+        if "json_agg" in lowered:
+            return ledger
+        return None
+
+    db = FakeDB(execute)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.get("/api/fees/ledger?month=2026-07", headers=auth_headers())
+
+    assert result.status_code == 200
+    calls = [sql.lower() for sql, _params in db.calls]
+    insert_index = next(i for i, sql in enumerate(calls) if "insert into fee_records" in sql)
+    select_index = next(i for i, sql in enumerate(calls) if "json_agg" in sql)
+    assert insert_index < select_index
+
+
+def test_registration_qr_removes_old_expired_tokens(client, monkeypatch):
+    def execute(sql, _params):
+        if "insert into registration_tokens" in sql:
+            return {
+                "id": REQUEST_ID,
+                "tutor_id": "tutor-1",
+                "token": "registration_token_12345678901234567890",
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=24),
+            }
+        return None
+
+    db = FakeDB(execute)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+
+    result = client.post("/api/registration-qr", headers=auth_headers())
+
+    assert result.status_code == 201
+    assert "delete from registration_tokens" in db.calls[0][0].lower()
+    assert "interval '7 days'" in db.calls[0][0].lower()

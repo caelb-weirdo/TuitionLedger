@@ -25,7 +25,7 @@
 
 1. Configure backend environment and deploy backend.
 2. Configure/deploy tutor frontend.
-3. Configure/deploy student website.
+3. Verify the same-origin student registration, browser-connection and attendance query flows.
 4. Verify Supabase Auth redirect URLs and RLS.
 5. Run the complete acceptance flow with two student browsers.
 6. Only after production no longer uses it, remove the deprecated `requested_classes` column in a separate migration.

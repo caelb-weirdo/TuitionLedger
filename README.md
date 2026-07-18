@@ -13,7 +13,7 @@
   <img alt="PWA" src="https://img.shields.io/badge/Tutor-PWA-f6c85f?style=for-the-badge&logo=pwa&logoColor=102a43">
 </p>
 
-[Tutor PWA](https://tuitionledger-frontend.vercel.app) · [Student Mobile Website](https://tuitionledger-mobile.vercel.app) · [API health](https://tuitionledger-backend.vercel.app/health)
+[Tutor + Student Frontend](https://tuitionledger-frontend.vercel.app) · [API health](https://tuitionledger-backend.vercel.app/health)
 
 </div>
 
@@ -44,22 +44,25 @@ The product is built around one trust boundary: a tutor approves a student's bro
 | Attendance | Date/class history, present/absent status and manual correction |
 | Fees | Monthly fee generation, paid/unpaid status, WhatsApp click-to-chat reminder |
 | Tutor PWA | Manifest, service worker, install support and a read-only offline fallback |
-| Student Mobile Website | Persistent browser ID, registration/waiting/approved states and attendance result states |
+| Student QR Website | Same-origin registration, browser approval and attendance states without a student login or install prompt |
 | Design system | Frosted Touch surfaces, rounded cards, soft gradients, bento dashboard, matte-glass icons |
 
 ## System at a glance
 
 ```mermaid
 flowchart LR
-    Tutor["Tutor PWA\nVite + Vanilla JS"]
-    Student["Student Mobile Website\nVite + Vanilla JS"]
+    Frontend["One Vite Frontend\nTutor PWA + Student QR flows"]
+    Tutor["Tutor routes\nHash-based workspace"]
+    Student["Student routes\nQuery-based registration / scan"]
     API["Flask API\nVercel Function"]
     Auth["Supabase Auth"]
     DB[("Supabase PostgreSQL\nRLS + ownership")]
     WA["WhatsApp\nclick-to-chat"]
 
+    Frontend --> Tutor
+    Frontend --> Student
     Tutor -->|Bearer token| API
-    Student -->|registration / scan| API
+    Student -->|public registration / scan| API
     API --> Auth
     API --> DB
     Tutor -->|reminder link| WA
@@ -96,20 +99,19 @@ sequenceDiagram
 
 ```text
 TuitionLedger/
-├── tutor-frontend/          # Installable Tutor PWA (Vite + Vanilla JS)
-│   ├── src/main.js          # Hash routes and page workflows
-│   ├── src/style.css        # Base layout and Frosted Touch styles
-│   ├── src/theme-overrides.css
-│   └── public/               # Manifest, service worker, icons and offline page
-├── student-mobile/          # Responsive Student Mobile Website
-│   ├── src/main.js          # Registration and attendance states
-│   ├── src/style.css        # Mobile-first UI
-│   └── public/               # Website logo only; no PWA assets
+├── tutor-frontend/          # One Vite deployment for Tutor + Student flows
+│   ├── src/main.js          # Chooses Tutor routes or Student query flows
+│   ├── src/app.css          # Consolidated Tutor Frosted Touch stylesheet
+│   ├── src/student/         # Registration, browser connection and attendance
+│   ├── src/core/            # Shared API, configuration and URL helpers
+│   └── public/              # Tutor manifest, service worker, icons and offline page
 ├── backend/                 # Flask API and Vercel Python entrypoint
-│   ├── app.py               # Routes, auth validation and error handling
+│   ├── app.py               # App creation, CORS and error handling
+│   ├── routes/              # Auth, Dashboard, Students, Classes, Attendance, Fees
 │   ├── api/index.py         # Vercel adapter
 │   └── requirements.txt
-├── supabase/schema.sql      # Tables, constraints, indexes and RLS policies
+├── supabase/migrations/     # Incremental database source of truth
+├── supabase/schema.sql      # Reference schema aligned with migrations
 ├── .gitignore
 └── README.md
 ```
@@ -127,7 +129,7 @@ TuitionLedger/
 | `#attendance` | Date/class attendance history and manual present/absent correction |
 | `#fees` | Monthly ledger, paid/unpaid updates and WhatsApp reminders |
 
-## Student Mobile Website states
+## Student QR Website states
 
 ```mermaid
 stateDiagram-v2
@@ -186,23 +188,27 @@ GET   /api/tutor
 PUT   /api/tutor
 ```
 
-### Students and registration
+### Dashboard, students and registration
 
 ```text
+GET    /api/dashboard
 GET    /api/students
+GET    /api/students/overview
 POST   /api/students
 PUT    /api/students/:id
 DELETE /api/students/:id
+GET    /api/students/:id/monthly-summary
 POST   /api/students/:id/reset-browser
 POST   /api/registration-qr
 POST   /api/register-student
-GET    /api/registration-requests/:id/status
 GET    /api/registration-requests
+GET    /api/registration-requests/:id
+GET    /api/registration-requests/:id/status
 POST   /api/registration-requests/:id/approve
 POST   /api/registration-requests/:id/reject
 POST   /api/browser-requests
-GET    /api/browser-requests/:id/status
 GET    /api/browser-requests
+GET    /api/browser-requests/:id/status
 POST   /api/browser-requests/:id/approve
 POST   /api/browser-requests/:id/reject
 ```
@@ -211,21 +217,22 @@ POST   /api/browser-requests/:id/reject
 
 ```text
 GET    /api/classes
+GET    /api/classes/:id
 POST   /api/classes
 PUT    /api/classes/:id
 DELETE /api/classes/:id
 GET    /api/classes/:id/students
 POST   /api/classes/:id/students
+POST   /api/classes/:id/students/bulk
 DELETE /api/classes/:id/students/:student_id
 POST   /api/attendance-sessions
 POST   /api/attendance-sessions/:id/end
 GET    /api/attendance/classes/:class_id
 POST   /api/attendance/scan
 POST   /api/attendance/manual
-GET    /api/fees
-POST   /api/fees/generate
-PUT    /api/fees/:id
-GET    /api/fees/:id/whatsapp
+GET    /api/fees/ledger?month=YYYY-MM
+PUT    /api/students/:id/fees/:month
+GET    /api/students/:id/fees/:month/whatsapp
 ```
 
 ## Local setup
@@ -285,15 +292,17 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 Open [http://localhost:5173](http://localhost:5173).
 
-### 4. Start the Student Mobile Website
+### 4. Test the Student QR Website
 
-```powershell
-cd student-mobile
-npm install
-npm run dev -- --host 0.0.0.0 --port 5174
+The Student registration, browser-connection and attendance pages are served by the same frontend on port `5173`. Tutor-generated QR codes use query parameters such as:
+
+```text
+http://localhost:5173/?registration_token=...
+http://localhost:5173/?attendance_token=...
+http://localhost:5173/?connect=true&tutor=...
 ```
 
-Open [http://localhost:5174](http://localhost:5174) from a phone on the same network.
+Student query flows do not register or remove service workers and do not show a PWA install prompt.
 
 ## Verification checklist
 
@@ -301,9 +310,7 @@ Run the fast checks before every deployment:
 
 ```powershell
 cd tutor-frontend
-npm run build
-
-cd ..\student-mobile
+npm test
 npm run build
 
 cd ..
@@ -318,7 +325,7 @@ git diff --check
 - [ ] Confirmation email returns to the current tutor login URL.
 - [ ] Tutor can sign in and sign out.
 - [ ] Tutor can create Grade 11 Maths and Grade 10 Science.
-- [ ] Registration QR opens the Student Mobile Website.
+- [ ] Registration QR opens the same-origin Student QR Website.
 - [ ] Student submission appears as pending.
 - [ ] Approval creates `STU001` on a fresh database.
 - [ ] Student enrollment is managed from Classes and shown read-only in Students.
@@ -328,31 +335,29 @@ git diff --check
 - [ ] Fee status changes from unpaid to paid.
 - [ ] WhatsApp click-to-chat contains the correct student and amount.
 - [ ] Tutor manifest, icons, service worker and install support load successfully.
-- [ ] Student website has no manifest, service worker or install prompt.
-- [ ] Tutor PWA and Student Mobile Website remain separate deployments.
+- [ ] Student query pages do not register, remove or offer a service worker.
+- [ ] Tutor and Student flows work from the same frontend deployment.
 
 ## Production deployment
 
-TuitionLedger runs as three Vercel projects backed by one Supabase project:
+TuitionLedger now uses **two Vercel projects** backed by one Supabase project:
 
-| Service | Vercel project | URL |
+| Service | Vercel project/root directory | URL |
 | --- | --- | --- |
-| Tutor PWA | `tuitionledger-frontend` | [tuitionledger-frontend.vercel.app](https://tuitionledger-frontend.vercel.app) |
-| Flask backend | `tuitionledger-backend` | [tuitionledger-backend.vercel.app](https://tuitionledger-backend.vercel.app) |
-| Student Mobile Website | `student-mobile` | [tuitionledger-mobile.vercel.app](https://tuitionledger-mobile.vercel.app) |
+| Tutor PWA + Student QR Website | `tutor-frontend` | [tuitionledger-frontend.vercel.app](https://tuitionledger-frontend.vercel.app) |
+| Flask backend | `backend` | [tuitionledger-backend.vercel.app](https://tuitionledger-backend.vercel.app) |
 
 Configure production variables:
 
 ```env
-# Tutor and student Vercel projects
+# Frontend Vercel project
 VITE_API_BASE_URL=https://tuitionledger-backend.vercel.app
-VITE_STUDENT_APP_URL=https://tuitionledger-mobile.vercel.app
 
 # Backend Vercel project
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_publishable_key
 DATABASE_URL=your_session_pooler_connection_string
-ALLOWED_ORIGINS=https://tuitionledger-frontend.vercel.app,https://tuitionledger-mobile.vercel.app
+ALLOWED_ORIGINS=https://tuitionledger-frontend.vercel.app
 AUTH_REDIRECT_URL=https://tuitionledger-frontend.vercel.app/#login
 ```
 
@@ -362,11 +367,7 @@ Also add the tutor login URL to Supabase Authentication → URL Configuration:
 https://tuitionledger-frontend.vercel.app/#login
 ```
 
-Deploy each project from its directory:
-
-```powershell
-vercel deploy --prod --yes --scope weirdos
-```
+Deploy each Vercel project using its root directory. The old `student-mobile` Vercel project should only be deleted after registration, browser connection and attendance QR links have been tested on the combined frontend.
 
 ## Design language
 

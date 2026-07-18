@@ -33,10 +33,37 @@ def class_payload(data):
 def classes():
     with database() as db:
         rows = db.execute(
-            "select * from classes where tutor_id=%s and status='Active' order by day,start_time",
+            """select c.*,
+            count(cs.student_id) filter (where cs.status='Active')::int as student_count
+            from classes c
+            left join class_students cs on cs.class_id=c.id
+            where c.tutor_id=%s and c.status='Active'
+            group by c.id
+            order by c.day,c.start_time""",
             (tutor_id(),),
         ).fetchall()
     return response([dict(row) for row in rows])
+
+
+@class_routes.get("/api/classes/<class_id>")
+@auth_required
+def get_class(class_id):
+    uuid_value(class_id, "Class")
+    with database() as db:
+        row = db.execute(
+            """select c.*,
+            count(cs.student_id) filter (where cs.status='Active')::int as student_count
+            from classes c
+            left join class_students cs on cs.class_id=c.id
+            where c.id=%s and c.tutor_id=%s and c.status='Active'
+            group by c.id""",
+            (class_id, tutor_id()),
+        ).fetchone()
+    return response(
+        dict(row) if row else None,
+        None if row else "Class not found.",
+        200 if row else 404,
+    )
 
 
 @class_routes.post("/api/classes")

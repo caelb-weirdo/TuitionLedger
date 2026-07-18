@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import { api, esc, msg } from "../core/api.js";
-import { studentUrl } from "../core/config.js";
+import { buildStudentUrl } from "../core/student-links.js";
 import { confirmDialog } from "../ui.js";
 import { shell } from "./layout.js";
 
@@ -205,7 +205,9 @@ export async function studentsPage() {
       const registration = await api("/api/registration-qr", {
         method: "POST",
       });
-      const url = `${studentUrl}/?registration_token=${encodeURIComponent(registration.token)}`;
+      const url = buildStudentUrl(location.origin, {
+        registration_token: registration.token,
+      });
       const qr = await QRCode.toDataURL(url, { width: 240 });
       output.innerHTML = `<article class="qr-card"><h3>Registration QR · valid for 24 hours</h3><img src="${qr}" alt="Registration QR"><p>${esc(url)}</p></article>`;
     } catch (error) {

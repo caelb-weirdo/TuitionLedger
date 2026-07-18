@@ -265,6 +265,9 @@ def registration_qr():
     token = secrets.token_urlsafe(32)
     expires = datetime.now(timezone.utc) + timedelta(hours=24)
     with database() as db:
+        db.execute(
+            "delete from registration_tokens where expires_at < now() - interval '7 days'"
+        )
         row = db.execute(
             "insert into registration_tokens(tutor_id,token,expires_at) values(%s,%s,%s) returning *",
             (tutor_id(), token, expires),
@@ -333,6 +336,22 @@ def registration_requests():
             (tutor_id(),),
         ).fetchall()
     return response([dict(row) for row in rows])
+
+
+@student_routes.get("/api/registration-requests/<request_id>")
+@auth_required
+def registration_request(request_id):
+    uuid_value(request_id, "Request")
+    with database() as db:
+        row = db.execute(
+            "select * from registration_requests where id=%s and tutor_id=%s",
+            (request_id, tutor_id()),
+        ).fetchone()
+    return response(
+        dict(row) if row else None,
+        None if row else "Registration request not found.",
+        200 if row else 404,
+    )
 
 
 def review_registration(request_id, decision):

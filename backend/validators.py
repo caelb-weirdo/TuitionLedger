@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date, time
 from decimal import Decimal, InvalidOperation
 from uuid import UUID
@@ -7,7 +8,6 @@ from uuid import UUID
 GRADES = ("Grade 10", "Grade 11")
 SUBJECTS = ("Maths", "Science", "English", "Tamil", "History")
 WEEKDAYS = tuple(range(7))
-NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z .'-]*$")
 STUDENT_CODE_PATTERN = re.compile(r"^STU[0-9]{3,6}$")
 TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,200}$")
 
@@ -27,8 +27,19 @@ def required_text(value, label, minimum=1, maximum=160):
 
 def person_name(value, label="Name"):
     text = required_text(value, label, 2, 160)
-    if not NAME_PATTERN.fullmatch(text):
-        raise ValidationError(f"{label} contains unsupported characters.")
+    if any(character.isdigit() for character in text):
+        raise ValidationError(f"{label} cannot contain numbers.")
+    if not any(character.isalpha() for character in text):
+        raise ValidationError(f"Enter a valid {label.lower()}.")
+    for character in text:
+        category = unicodedata.category(character)
+        if not (
+            character.isalpha()
+            or category.startswith("M")
+            or character.isspace()
+            or character in ".'-"
+        ):
+            raise ValidationError(f"{label} contains unsupported characters.")
     return text
 
 
@@ -141,7 +152,7 @@ def qr_duration(value):
     try:
         parsed = int(value)
     except (TypeError, ValueError):
-        raise ValidationError("Choose a 5 or 10 minute session.") from None
+        raise ValidationError("Choose a 5, 10, or 15 minute session.") from None
     return one_of(parsed, (5, 10, 15), "5, 10, or 15 minute session")
 
 
