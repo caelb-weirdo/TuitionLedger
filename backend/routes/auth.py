@@ -10,6 +10,24 @@ from core import auth_call, auth_required, database, response, tutor_id
 auth_routes = Blueprint("auth", __name__)
 
 
+def ensure_tutor_profile(user):
+    metadata = user.get("user_metadata") or {}
+    with database() as db:
+        row = db.execute(
+            """insert into tutors(id,full_name,email)
+            values(%s,%s,%s)
+            on conflict(id) do update set email=excluded.email
+            returning *""",
+            (
+                user["id"],
+                str(metadata.get("full_name", "")).strip(),
+                user.get("email", ""),
+            ),
+        ).fetchone()
+        db.commit()
+    return dict(row)
+
+
 @auth_routes.post("/api/auth/signup")
 def signup():
     data = request.get_json(silent=True) or {}
@@ -28,6 +46,8 @@ def signup():
             f"/auth/v1/signup?redirect_to={quote(redirect, safe='')}",
             {"email": email, "password": password},
         )
+        if result.get("user"):
+            ensure_tutor_profile(result["user"])
         return response(
             {
                 "user": result.get("user"),
@@ -60,6 +80,8 @@ def login():
         result = auth_call(
             "/auth/v1/token?grant_type=password", {"email": email, "password": password}
         )
+        if result.get("user"):
+            ensure_tutor_profile(result["user"])
         return response(
             {
                 key: result.get(key)
@@ -98,9 +120,7 @@ def refresh():
 def get_tutor():
     with database() as db:
         row = db.execute("select * from tutors where id=%s", (tutor_id(),)).fetchone()
-    return response(
-        dict(row) if row else {"id": tutor_id(), "email": g.user.get("email")}
-    )
+    return response(dict(row) if row else ensure_tutor_profile(g.user))
 
 
 @auth_routes.put("/api/tutor")
@@ -110,7 +130,7 @@ def update_tutor():
     with database() as db:
         row = db.execute(
             """insert into tutors(id,full_name,email,phone,center_name) values(%s,%s,%s,%s,%s)
-            on conflict(id) do update set full_name=excluded.full_name,phone=excluded.phone,center_name=excluded.center_name returning *""",
+            on conflict(id) do update set full_name=excluded.full_name,email=excluded.email,phone=excluded.phone,center_name=excluded.center_name returning *""",
             (
                 tutor_id(),
                 str(data.get("full_name", "")).strip(),

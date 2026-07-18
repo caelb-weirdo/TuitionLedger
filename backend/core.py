@@ -30,13 +30,6 @@ def database():
     return psycopg.connect(url, row_factory=dict_row, sslmode="require")
 
 
-def _auth_database():
-    """Use the application-level database hook so tests can inject a fake DB."""
-    app_module = sys.modules.get("app")
-    resolver = getattr(app_module, "database", database) if app_module else database
-    return resolver()
-
-
 def _auth_urlopen(*args, **kwargs):
     app_module = sys.modules.get("app")
     resolver = getattr(app_module, "urlopen", urlopen) if app_module else urlopen
@@ -51,6 +44,10 @@ def auth_required(handler):
             return response(message="Please sign in first.", status=401)
         url = os.getenv("SUPABASE_URL", "").rstrip("/")
         key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+        if not url.startswith(("https://", "http://")) or not key:
+            return response(
+                message="Authentication service is not configured.", status=503
+            )
         try:
             auth_request = Request(
                 f"{url}/auth/v1/user",
@@ -59,19 +56,6 @@ def auth_required(handler):
             with _auth_urlopen(auth_request, timeout=10) as result:
                 g.user = json.loads(result.read().decode("utf-8"))
             g.token = token
-            metadata = g.user.get("user_metadata") or {}
-            with _auth_database() as db:
-                db.execute(
-                    """insert into tutors (id, full_name, email)
-                       values (%s, %s, %s)
-                       on conflict (id) do update set email = excluded.email""",
-                    (
-                        g.user["id"],
-                        str(metadata.get("full_name", "")).strip(),
-                        g.user.get("email", ""),
-                    ),
-                )
-                db.commit()
             return handler(*args, **kwargs)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
             return response(

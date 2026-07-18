@@ -65,3 +65,20 @@ def test_qr_duration_accepts_fifteen_minutes():
 def test_qr_duration_rejects_other_values():
     with pytest.raises(ValidationError):
         qr_duration(6)
+
+
+def test_qr_duration_error_mentions_all_supported_values():
+    with pytest.raises(ValidationError, match="5, 10, or 15"):
+        qr_duration("five")
+
+
+def test_person_name_accepts_sinhala_and_tamil_letters():
+    assert person_name("කවිඳු පෙරේරා") == "කවිඳු පෙරේරා"
+    assert person_name("அருண் குமார்") == "அருண் குமார்"
+
+
+def test_person_name_rejects_digits_and_symbols():
+    with pytest.raises(ValidationError):
+        person_name("Student 123")
+    with pytest.raises(ValidationError):
+        person_name("@@@")

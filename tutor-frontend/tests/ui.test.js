@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   attendanceSummary,
   filterAttendance,
@@ -55,10 +55,7 @@ test("filters fee rows by student, class, and payment status", () => {
 });
 
 test("keeps mobile navigation out of desktop document flow", () => {
-  const css = readFileSync(
-    new URL("../src/style.css", import.meta.url),
-    "utf8",
-  );
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
   assert.match(
     css,
     /\.app-shell\s*>\s*\.mobile-navigation\s*{\s*display:\s*none;/,
@@ -67,6 +64,18 @@ test("keeps mobile navigation out of desktop document flow", () => {
     css,
     /@media\s*\(max-width:\s*700px\)[\s\S]*?\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?display:\s*grid;/,
   );
+});
+
+test("uses one consolidated tutor stylesheet", () => {
+  assert.equal(existsSync(new URL("../src/app.css", import.meta.url)), true);
+  for (const file of [
+    "style.css",
+    "logo.css",
+    "password.css",
+    "theme-overrides.css",
+  ]) {
+    assert.equal(existsSync(new URL(`../src/${file}`, import.meta.url)), false);
+  }
 });
 
 test("renders the fee reminder as an accessible WhatsApp icon", () => {
@@ -81,14 +90,55 @@ test("renders the fee reminder as an accessible WhatsApp icon", () => {
   assert.doesNotMatch(source, /window\.open\(result\.url/);
 });
 
-test("places global runtime errors inside the visible workspace", () => {
+test("logs global runtime failures without hiding browser errors", () => {
   const source = readFileSync(
-    new URL("../src/runtime-error-boundary.js", import.meta.url),
+    new URL("../src/main.js", import.meta.url),
     "utf8",
   );
-  assert.match(source, /app\.querySelector\("\.workspace"\)/);
-  assert.match(source, /workspaceHeader\.after\(notice\)/);
-  assert.doesNotMatch(source, /app\.prepend\(notice\)/);
+  assert.match(source, /window\.addEventListener\("error"/);
+  assert.match(source, /window\.addEventListener\("unhandledrejection"/);
+  assert.match(source, /console\.error/);
+  assert.doesNotMatch(source, /preventDefault\(\)/);
+});
+
+test("renders sidebar icons directly and preserves the students badge", () => {
+  const layout = readFileSync(
+    new URL("../src/pages/layout.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(layout, /function iconSvg\(/);
+  assert.match(layout, /data-pending-badge/);
+  assert.match(layout, /\$\{iconSvg\(id\)\}/);
+  assert.equal(
+    existsSync(new URL("../src/sidebar-icons.js", import.meta.url)),
+    false,
+  );
+});
+
+test("routes landing section hashes back to the landing page", () => {
+  const source = readFileSync(
+    new URL("../src/main.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /landingSections/);
+  assert.match(source, /scrollIntoView/);
+  for (const section of ["features", "flow", "preview", "faq"]) {
+    assert.match(source, new RegExp(`"${section}"`));
+  }
+});
+
+test("does not load removed DOM workaround scripts", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  for (const file of [
+    "text-sanitizer.js",
+    "runtime-error-boundary.js",
+    "request-loading.js",
+    "shadcn-skeletons.js",
+    "sidebar-icons.js",
+  ]) {
+    assert.doesNotMatch(html, new RegExp(file));
+    assert.equal(existsSync(new URL(`../src/${file}`, import.meta.url)), false);
+  }
 });
 
 test("renders attendance as compact student directory rows", () => {
@@ -101,10 +151,7 @@ test("renders attendance as compact student directory rows", () => {
 });
 
 test("uses the full desktop width without a sidebar divider", () => {
-  const css = readFileSync(
-    new URL("../src/style.css", import.meta.url),
-    "utf8",
-  );
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
   assert.match(
     css,
     /\.app-shell\s*>\s*\.workspace\s*{[\s\S]*?max-width:\s*none;[\s\S]*?width:\s*calc\(100%\s*-\s*235px\);/,
@@ -116,10 +163,7 @@ test("uses the full desktop width without a sidebar divider", () => {
 });
 
 test("uses compact shared workspace headers", () => {
-  const css = readFileSync(
-    new URL("../src/style.css", import.meta.url),
-    "utf8",
-  );
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
   assert.match(css, /\.workspace-header\s*{[\s\S]*?padding:\s*14px 20px;/);
   assert.match(
     css,
@@ -136,10 +180,7 @@ test("uses compact shared workspace headers", () => {
 });
 
 test("keeps all five mobile navigation items inside narrow screens", () => {
-  const css = readFileSync(
-    new URL("../src/style.css", import.meta.url),
-    "utf8",
-  );
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
   assert.match(
     css,
     /\.app-shell\s*>\s*\.mobile-navigation\s*{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/,
@@ -204,5 +245,145 @@ test("keeps attendance correction form state valid across async requests", () =>
   assert.doesNotMatch(
     source,
     /await api\("\/api\/attendance\/manual"[\s\S]*?event\.currentTarget\.reset\(\)/,
+  );
+});
+
+test("loads the dashboard through one summary endpoint", () => {
+  const source = readFileSync(
+    new URL("../src/pages/dashboard.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /api\("\/api\/dashboard"/);
+  for (const oldPath of [
+    "/api/students",
+    "/api/classes",
+    "/api/registration-requests",
+    "/api/fees",
+  ]) {
+    assert.doesNotMatch(source, new RegExp(`api\\(\\"${oldPath}`));
+  }
+});
+
+test("loads class rosters only when Manage is opened", () => {
+  const source = readFileSync(
+    new URL("../src/pages/classes.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /classItem\.student_count/);
+  assert.match(source, /async function openManager/);
+  assert.match(source, /api\(`\/api\/classes\/\$\{classItem\.id\}\/students`/);
+  assert.doesNotMatch(source, /classes\.map\(async/);
+});
+
+test("loads single resources for QR and registration details", () => {
+  const qr = readFileSync(
+    new URL("../src/pages/qr-session.js", import.meta.url),
+    "utf8",
+  );
+  const registration = readFileSync(
+    new URL("../src/pages/registration-request.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(qr, /api\(`\/api\/classes\/\$\{classId\}`/);
+  assert.doesNotMatch(qr, /api\("\/api\/classes"\)/);
+  assert.match(
+    registration,
+    /api\(\s*`\/api\/registration-requests\/\$\{requestId\}`/,
+  );
+  assert.doesNotMatch(registration, /api\("\/api\/registration-requests"/);
+});
+
+test("loads fee ledger without a separate ensure request", () => {
+  const source = readFileSync(
+    new URL("../src/pages/fees.js", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(source, /\/api\/fees\/ensure/);
+  assert.doesNotMatch(source, /fees-ready/);
+  assert.match(source, /\/api\/fees\/ledger\?month=/);
+});
+
+test("builds same-origin student flow links", async () => {
+  const { buildStudentUrl } = await import("../src/core/student-links.js");
+  assert.equal(
+    buildStudentUrl("https://tuitionledger.example", {
+      connect: "true",
+      tutor: "tutor-123",
+    }),
+    "https://tuitionledger.example/?connect=true&tutor=tutor-123",
+  );
+  assert.equal(
+    buildStudentUrl("https://tuitionledger.example/", {
+      attendance_token: "a token",
+    }),
+    "https://tuitionledger.example/?attendance_token=a+token",
+  );
+});
+
+test("shows a replacement-browser QR after browser reset", () => {
+  const source = readFileSync(
+    new URL("../src/pages/student-detail.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /import QRCode from "qrcode"/);
+  assert.match(source, /buildStudentUrl/);
+  assert.match(source, /connect:\s*"true"/);
+  assert.match(source, /data-browser-connect/);
+  assert.match(source, /Copy connection link/);
+});
+
+test("marks QR sessions expired and protects action buttons", () => {
+  const source = readFileSync(
+    new URL("../src/pages/qr-session.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /function expireSession/);
+  assert.match(source, /Session expired/);
+  assert.match(source, /status-pill[^`]*Expired/);
+  assert.match(source, /submitButton\.disabled = true/);
+  assert.match(source, /submitButton\.disabled = false/);
+});
+
+test("routes student query links into the combined frontend", () => {
+  const source = readFileSync(
+    new URL("../src/main.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /isStudentFlow/);
+  assert.match(source, /registration_token/);
+  assert.match(source, /attendance_token/);
+  assert.match(source, /query\.get\("connect"\) === "true"/);
+  assert.match(source, /import\("\.\/student\/main\.js"\)/);
+  assert.match(source, /else \{[\s\S]*registerTutorPwa\(\)/);
+});
+
+test("uses progressively slower approval polling", async () => {
+  const { approvalPollDelay } = await import("../src/student/polling.js");
+  assert.equal(approvalPollDelay(0), 5_000);
+  assert.equal(approvalPollDelay(59_999), 5_000);
+  assert.equal(approvalPollDelay(60_000), 15_000);
+  assert.equal(approvalPollDelay(299_999), 15_000);
+  assert.equal(approvalPollDelay(300_000), 30_000);
+});
+
+test("merged student flow keeps the tutor service worker intact", () => {
+  const source = readFileSync(
+    new URL("../src/student/main.js", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(source, /getRegistrations|unregister\(|caches\.keys/);
+  assert.match(source, /Check Approval Now/);
+  assert.match(source, /approvalPollDelay/);
+});
+
+test("uses one frontend project for tutor and student flows", () => {
+  const config = readFileSync(
+    new URL("../src/core/config.js", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(config, /VITE_STUDENT_APP_URL|studentUrl/);
+  assert.equal(
+    existsSync(new URL("../../student-mobile", import.meta.url)),
+    false,
   );
 });

@@ -90,9 +90,6 @@ export async function api(path, options = {}, retried = false) {
     responseCache.set(cacheKey, { data: body.data, savedAt: Date.now() });
   } else {
     responseCache.clear();
-    Object.keys(sessionStorage)
-      .filter((key) => key.startsWith("tuitionledger:fees-ready:"))
-      .forEach((key) => sessionStorage.removeItem(key));
   }
   return body.data;
 }

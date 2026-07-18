@@ -9,6 +9,8 @@ from test_api import BROWSER_ID, FakeDB, FakeResponse, auth_headers
 @pytest.fixture
 def client(monkeypatch):
     api_app.app.config.update(TESTING=True)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_PUBLISHABLE_KEY", "test-key")
     monkeypatch.setattr(
         api_app,
         "urlopen",
@@ -57,9 +59,9 @@ def test_manual_correction_requires_reason(client):
     assert "reason" in result.json["message"].lower()
 
 
-def test_fee_generation_rejects_non_month_value(client):
-    result = client.post(
-        "/api/fees/generate", headers=auth_headers(), json={"month": "July 2026"}
+def test_fee_ledger_rejects_non_month_value(client):
+    result = client.get(
+        "/api/fees/ledger?month=July%202026", headers=auth_headers()
     )
     assert result.status_code == 422
 
@@ -127,3 +129,19 @@ def test_migration_is_non_destructive_and_contains_required_guards():
     assert "uq_pending_registration_browser" in migration
     assert "attendance_records_manual_reason_check" in migration
     assert "to authenticated" in migration
+
+
+def test_schema_and_migration_allow_fifteen_minute_sessions():
+    root = Path(__file__).parents[2]
+    schema = (root / "supabase" / "schema.sql").read_text(encoding="utf-8")
+    migration = root / "supabase" / "migrations" / "20260718080000_allow_fifteen_minute_sessions.sql"
+    assert "duration_minutesin(5,10,15)" in schema.replace(" ", "").lower()
+    assert migration.exists()
+    migration_text = migration.read_text(encoding="utf-8").replace(" ", "").lower()
+    assert "check(duration_minutesin(5,10,15))" in migration_text
+
+
+def test_unknown_api_route_keeps_http_404(client):
+    result = client.get("/api/does-not-exist")
+    assert result.status_code == 404
+    assert result.json["success"] is False

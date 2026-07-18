@@ -63,7 +63,7 @@ create table attendance_sessions (
   id uuid primary key default gen_random_uuid(), tutor_id uuid not null references tutors(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade, attendance_date date not null default current_date, qr_token text not null unique,
   starts_at timestamptz not null default now(), expires_at timestamptz not null,
-  duration_minutes smallint not null check (duration_minutes in (5,10)), status text not null default 'Active' check (status in ('Active','Ended','Expired'))
+  duration_minutes smallint not null check (duration_minutes in (5,10,15)), status text not null default 'Active' check (status in ('Active','Ended','Expired'))
 );
 create table attendance_records (
   id uuid primary key default gen_random_uuid(), session_id uuid not null references attendance_sessions(id) on delete cascade,

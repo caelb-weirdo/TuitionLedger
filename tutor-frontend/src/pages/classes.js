@@ -7,13 +7,13 @@ export async function classesPage() {
   shell(
     "classes",
     "Classes",
-    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Start attendance or manage a class without opening a long workspace.</p></div><button id="open-class-form" class="button">+ Add class</button></section><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><dialog id="manage-class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class roster</p><h3 id="manage-class-title">Manage class</h3></div><button id="close-manage-class" class="icon-button" type="button" aria-label="Close">&times;</button></div><div id="manage-class-content"></div></dialog><section id="class-list" class="class-card-grid">Loading classes...</section>`,
+    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Start attendance or manage a class without opening a long workspace.</p></div><button id="open-class-form" class="button">+ Add class</button></section><p id="class-page-notice" class="form-notice" role="status" aria-live="polite"></p><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><dialog id="manage-class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class roster</p><h3 id="manage-class-title">Manage class</h3></div><button id="close-manage-class" class="icon-button" type="button" aria-label="Close">&times;</button></div><div id="manage-class-content"></div></dialog><section id="class-list" class="class-card-grid">Loading classes...</section>`,
   );
+  const notice = document.querySelector("#class-page-notice");
   const enrolNotice = sessionStorage.getItem("tuitionledger:enrol-notice");
   if (enrolNotice) {
-    document
-      .querySelector(".class-page-intro")
-      .insertAdjacentHTML("afterend", msg(enrolNotice, "success"));
+    notice.textContent = enrolNotice;
+    notice.className = "form-notice success";
     sessionStorage.removeItem("tuitionledger:enrol-notice");
   }
 
@@ -21,6 +21,8 @@ export async function classesPage() {
   const dialog = document.querySelector("#class-dialog");
   const manageDialog = document.querySelector("#manage-class-dialog");
   let editingClass = null;
+  let studentsPromise = null;
+
   const resetForm = () => {
     editingClass = null;
     form.reset();
@@ -30,13 +32,20 @@ export async function classesPage() {
       'button[type="submit"], button:not([type])',
     ).textContent = "Save class";
   };
+
   document.querySelector("#cancel-class-edit").onclick = resetForm;
   document.querySelector("#close-class-form").onclick = resetForm;
   document.querySelector("#close-manage-class").onclick = () =>
     manageDialog.close();
   document.querySelector("#open-class-form").onclick = () => dialog.showModal();
+
   form.onsubmit = async (event) => {
     event.preventDefault();
+    notice.textContent = "";
+    const submit = form.querySelector(
+      'button[type="submit"], button:not([type])',
+    );
+    submit.disabled = true;
     try {
       await api(
         editingClass ? `/api/classes/${editingClass.id}` : "/api/classes",
@@ -47,39 +56,48 @@ export async function classesPage() {
       );
       classesPage();
     } catch (error) {
-      form.insertAdjacentHTML("beforebegin", msg(error.message, "error"));
+      notice.textContent = error.message;
+      notice.className = "form-notice error";
+      submit.disabled = false;
     }
   };
 
   try {
-    const [classes, students] = await Promise.all([
-      api("/api/classes"),
-      api("/api/students"),
-    ]);
-    const rosters = new Map(
-      await Promise.all(
-        classes.map(async (classItem) => [
-          classItem.id,
-          await api(`/api/classes/${classItem.id}/students`),
-        ]),
-      ),
-    );
+    const classes = await api("/api/classes");
     const host = document.querySelector("#class-list");
     host.innerHTML =
       classes
         .map((classItem) => {
-          const count = (rosters.get(classItem.id) || []).length;
+          const count = Number(classItem.student_count || 0);
           return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3></div><div class="class-mini-actions"><a class="button button-small" href="#qr-session?class=${classItem.id}">Start QR</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
         })
         .join("") ||
       `<article class="record-card"><h3>No classes yet</h3><p>Create your first class to enrol students and start attendance.</p></article>`;
+
+    async function openManager(classItem) {
+      document.querySelector("#manage-class-title").textContent =
+        classItem.class_name;
+      const content = document.querySelector("#manage-class-content");
+      content.innerHTML = '<p class="muted">Loading class roster…</p>';
+      manageDialog.showModal();
+      try {
+        studentsPromise ||= api("/api/students");
+        const [enrolled, allStudents] = await Promise.all([
+          api(`/api/classes/${classItem.id}/students`, { force: true }),
+          studentsPromise,
+        ]);
+        renderManager(classItem, enrolled, allStudents);
+      } catch (error) {
+        content.innerHTML = msg(error.message, "error");
+      }
+    }
 
     host.querySelectorAll("[data-manage]").forEach((button) => {
       button.onclick = () => {
         const classItem = classes.find(
           (item) => item.id === button.dataset.manage,
         );
-        renderManager(classItem, rosters.get(classItem.id) || [], students);
+        openManager(classItem);
       };
     });
 
@@ -180,7 +198,6 @@ export async function classesPage() {
           classesPage();
         };
       });
-      manageDialog.showModal();
     }
   } catch (error) {
     document.querySelector("#class-list").innerHTML = msg(

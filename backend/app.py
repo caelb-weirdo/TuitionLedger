@@ -5,11 +5,13 @@ import psycopg
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 
 from core import database, response  # noqa: F401 - test injection hook
 from routes.attendance import attendance_routes
 from routes.auth import auth_routes
 from routes.classes import class_routes
+from routes.dashboard import dashboard_routes
 from routes.fees import fee_routes
 from routes.students import student_routes
 from validators import ValidationError
@@ -33,6 +35,7 @@ def create_app():
     CORS(application, origins=origins)
     for blueprint in (
         auth_routes,
+        dashboard_routes,
         student_routes,
         class_routes,
         attendance_routes,
@@ -63,6 +66,10 @@ def create_app():
         return response(
             message="The data service is temporarily unavailable.", status=503
         )
+
+    @application.errorhandler(HTTPException)
+    def http_error(error):
+        return response(message=error.description, status=error.code or 500)
 
     @application.errorhandler(Exception)
     def unknown_error(error):

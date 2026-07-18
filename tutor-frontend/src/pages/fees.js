@@ -28,14 +28,6 @@ export async function feesPage() {
     host.innerHTML = skeletonRows();
     try {
       const month = monthInput.value;
-      const readyKey = `tuitionledger:fees-ready:${month}`;
-      if (!sessionStorage.getItem(readyKey)) {
-        await api("/api/fees/ensure", {
-          method: "POST",
-          body: JSON.stringify({ month }),
-        });
-        sessionStorage.setItem(readyKey, "true");
-      }
       rows = await api(`/api/fees/ledger?month=${encodeURIComponent(month)}`, {
         force,
       });

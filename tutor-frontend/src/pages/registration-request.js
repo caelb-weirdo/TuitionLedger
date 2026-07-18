@@ -25,14 +25,9 @@ export async function registrationRequestPage() {
   );
   const host = document.querySelector("#registration-request-detail");
   try {
-    const requests = await api("/api/registration-requests", { force: true });
-    const registration = requests.find((item) => item.id === requestId);
-    if (!registration) {
-      host.innerHTML =
-        '<div class="empty-state"><h2 tabindex="-1">Registration request not found</h2><p>It may already have been removed or may belong to another tutor.</p></div>';
-      host.querySelector("h2").focus();
-      return;
-    }
+    const registration = await api(`/api/registration-requests/${requestId}`, {
+      force: true,
+    });
     render(registration);
   } catch (error) {
     host.innerHTML = msg(error.message, "error");
