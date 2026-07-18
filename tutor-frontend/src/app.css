@@ -2830,6 +2830,17 @@ button:disabled {
     background: #6657d9;
     color: #fff;
   }
+  .mobile-navigation a span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .mobile-navigation .nav-badge {
     position: absolute;
     margin: -30px 0 0 32px;
