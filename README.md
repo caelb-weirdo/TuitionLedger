@@ -8,7 +8,9 @@ Outside that window, the tutor must explicitly choose an audited extra-session r
 
 Active QR sessions poll an authenticated tutor-only progress endpoint every five seconds for present/expected totals and the five most recent successful scans. Browser approvals support individual review or explicit checkbox selection followed by `Approve selected`; unselected requests are never changed.
 
-Apply `supabase/migrations/20260719090000_attendance_session_scheduling.sql` through the normal Supabase migration workflow before deploying the matching backend. Do not rerun `supabase/schema.sql` against an existing database.
+The live catalogue contains ten fixed Grade 10 and Grade 11 classes across Maths, Science, English, Tamil, and History. Tutors manage schedules, fees, rosters, attendance, and archiving for those records; the Classes workspace does not create additional catalogue entries.
+
+Apply the reviewed files in `supabase/migrations/` through the normal Supabase migration workflow before deploying matching application code. Never run `supabase/schema.sql` against an existing database.
 
 <div align="center">
 
@@ -50,7 +52,7 @@ The product is built around one trust boundary: a tutor approves a student's bro
 | Tutor authentication | Supabase email sign-up, confirmation, login, session persistence, sign-out |
 | Student directory | Add, edit, archive, browser reset, search-ready records, sequential IDs (`STU001`) |
 | Registration | Tutor-generated QR, mobile registration form, pending approval, approve/reject |
-| Classes | Class CRUD, schedules, monthly fees, enrollment, short-lived attendance QR, countdown and session ending |
+| Classes | Fixed Grade 10/11 catalogue, schedule and fee editing, enrolment, archiving, short-lived attendance QR, countdown and session ending |
 | Attendance | Date/class history, present/absent status and manual correction |
 | Fees | Monthly fee generation, paid/unpaid status, WhatsApp click-to-chat reminder |
 | Tutor PWA | Manifest, service worker, install support and a read-only offline fallback |
@@ -135,7 +137,7 @@ TuitionLedger/
 | `#signup` | Tutor account creation and email-confirmation guidance |
 | `#dashboard` | Overview: totals, today's classes and recent activity |
 | `#students` | Student CRUD, registration QR, approvals, browser reset and read-only enrolled classes |
-| `#classes` | Class CRUD, enrollment, attendance QR, duration, countdown and session ending |
+| `#classes` | Fixed class catalogue management, enrolment, attendance QR, duration, countdown and session ending |
 | `#attendance` | Date/class attendance history and manual present/absent correction |
 | `#fees` | Monthly ledger, paid/unpaid updates and WhatsApp reminders |
 
@@ -221,6 +223,7 @@ GET    /api/browser-requests
 GET    /api/browser-requests/:id/status
 POST   /api/browser-requests/:id/approve
 POST   /api/browser-requests/:id/reject
+POST   /api/browser-requests/bulk-approve
 ```
 
 ### Classes, attendance and fees
@@ -228,8 +231,10 @@ POST   /api/browser-requests/:id/reject
 ```text
 GET    /api/classes
 GET    /api/classes/:id
+# Compatibility endpoint; the fixed-catalogue product UI does not support creation.
 POST   /api/classes
 PUT    /api/classes/:id
+# Archives the class and preserves its attendance and fee history.
 DELETE /api/classes/:id
 GET    /api/classes/:id/students
 POST   /api/classes/:id/students
@@ -237,6 +242,7 @@ POST   /api/classes/:id/students/bulk
 DELETE /api/classes/:id/students/:student_id
 POST   /api/attendance-sessions
 POST   /api/attendance-sessions/:id/end
+GET    /api/attendance-sessions/:id/progress
 GET    /api/attendance/classes/:class_id
 POST   /api/attendance/scan
 POST   /api/attendance/manual
@@ -274,10 +280,12 @@ AUTH_REDIRECT_URL=http://localhost:5173/#login
 
 Use the **Session pooler** connection string from Supabase Dashboard → Connect → Connection Pooling. URL-encode special characters in the database password. Never commit `.env`, service-role keys, or database passwords.
 
-Do **not** run the destructive reference `supabase/schema.sql` against an existing database. Back up and inspect the live schema, then apply the reviewed incremental migration:
+Do **not** run the destructive reference `supabase/schema.sql` against an existing database. Back up and inspect the live schema, then apply the reviewed incremental migrations in timestamp order. The latest production-aligned migrations include:
 
 ```text
 supabase/migrations/20260716102500_final_requirements_foundation.sql
+supabase/migrations/20260719090000_attendance_session_scheduling.sql
+supabase/migrations/20260719163000_set_catalogue_class_fees.sql
 ```
 
 See [migration verification](docs/DATABASE_MIGRATION_VERIFICATION.md) before changing production data.
@@ -334,20 +342,23 @@ git diff --check
 - [ ] Tutor sign-up displays a clear success or error state.
 - [ ] Confirmation email returns to the current tutor login URL.
 - [ ] Tutor can sign in and sign out.
-- [ ] Tutor can create Grade 11 Maths and Grade 10 Science.
+- [ ] The Classes workspace shows the ten fixed Grade 10/11 classes without an Add Class control.
+- [ ] Tutor can edit an existing class schedule and fee through Manage > Edit details.
 - [ ] Registration QR opens the same-origin Student QR Website.
 - [ ] Student submission appears as pending.
 - [ ] Approval creates `STU001` on a fresh database.
 - [ ] Student enrollment is managed from Classes and shown read-only in Students.
 - [ ] Attendance QR starts from Classes, counts down, ends, and accepts the approved browser.
+- [ ] Active attendance shows expected/present totals and recent successful scans without refreshing.
 - [ ] Attendance contains history and manual correction but no QR controls.
 - [ ] Duplicate, expired, wrong-browser and not-enrolled states are friendly.
 - [ ] Fee status changes from unpaid to paid.
 - [ ] WhatsApp click-to-chat contains the correct student and amount.
 - [ ] Tutor manifest, icons, service worker and install support load successfully.
 - [ ] Student query pages do not register, remove or offer a service worker.
-- [ ] Tutor and Student flows work from the same frontend deployment.\r
+- [ ] Tutor and Student flows work from the same frontend deployment.
 - [ ] A Grade 11 student cannot be enrolled in a Grade 10 class, and vice versa.
+- [ ] Selected pending browser requests can be bulk-approved without changing unselected requests.
 
 ## Production deployment
 
@@ -378,7 +389,7 @@ Also add the tutor login URL to Supabase Authentication → URL Configuration:
 https://tuitionledger-frontend.vercel.app/#login
 ```
 
-Deploy each Vercel project using its root directory. The old `student-mobile` Vercel project should only be deleted after registration, browser connection and attendance QR links have been tested on the combined frontend.
+Deploy each Vercel project using its root directory. Production is complete only when both deployments report `READY`, their Git commit SHA matches `origin/main`, the frontend returns HTTP 200, and the backend `/health` endpoint returns a successful JSON response.
 
 ## Design language
 
@@ -405,7 +416,7 @@ The interface uses **Frosted Touch**: translucent glass panels, diffused shadows
 
 ## Project status
 
-TuitionLedger is an actively developed full-stack MVP. Keep the schema, API response envelope, tutor ownership rules, and live acceptance workflow aligned when adding features.
+TuitionLedger is an actively developed full-stack MVP. The current production baseline uses one combined frontend, one Flask backend, ten fixed active classes priced at LKR 1,200 per month, incremental Supabase migrations, and the API response envelope documented above. Keep those contracts, tutor ownership rules, and live acceptance workflow aligned when adding features.
 
 ## License
 
