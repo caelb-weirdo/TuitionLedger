@@ -562,3 +562,4 @@ select option:checked {
 select:disabled {
   background-color: #26332f !important;
   color: #d5ded9 !important;
+}
