@@ -477,6 +477,46 @@ def browser_request_status(request_id):
     )
 
 
+@student_routes.post("/api/browser-requests/bulk-approve")
+@auth_required
+def bulk_approve_browser_requests():
+    raw_ids = (request.get_json(silent=True) or {}).get("request_ids")
+    if not isinstance(raw_ids, list) or not raw_ids or len(raw_ids) > 100:
+        return response(message="Choose between 1 and 100 browser requests.", status=422)
+    request_ids = list(dict.fromkeys(str(uuid_value(value, "Request")) for value in raw_ids))
+    approved = 0
+    failed = []
+    with database() as db:
+        requests = db.execute(
+            """select br.id,br.student_id,br.browser_id from browser_requests br
+            join students s on s.id=br.student_id
+            where br.id=any(%s::uuid[]) and br.tutor_id=%s and s.tutor_id=%s
+              and br.status='Pending' and s.status='Active' for update""",
+            (request_ids, tutor_id(), tutor_id()),
+        ).fetchall()
+        found = {str(item["id"]) for item in requests}
+        failed.extend(value for value in request_ids if value not in found)
+        for item in requests:
+            conflict = db.execute(
+                "select 1 from students where tutor_id=%s and browser_id=%s and id<>%s and browser_status='Approved' and status='Active'",
+                (tutor_id(), item["browser_id"], item["student_id"]),
+            ).fetchone()
+            if conflict:
+                failed.append(str(item["id"]))
+                continue
+            db.execute(
+                "update browser_requests set status='Approved',reviewed_at=now() where id=%s returning id",
+                (item["id"],),
+            ).fetchone()
+            db.execute(
+                "update students set browser_id=%s,browser_status='Approved',updated_at=now() where id=%s and tutor_id=%s",
+                (item["browser_id"], item["student_id"], tutor_id()),
+            )
+            approved += 1
+        db.commit()
+    return response({"approved": approved, "failed": failed}, "Selected browser requests processed.")
+
+
 def review_browser_request(request_id, decision):
     uuid_value(request_id, "Request")
     with database() as db:

@@ -127,10 +127,12 @@ export async function studentsPage() {
           (request) =>
             `<a class="approval-row record-card pending" href="#registration-request?request=${request.id}"><span><span class="status-pill">Student registration</span><strong>${esc(request.full_name)}</strong><small>${esc(request.grade)} · ${esc(request.student_phone)}</small></span><span class="view-student">Review →</span></a>`,
         )
-        .join("")}${browsers
+        .join(
+          "",
+        )}${browsers.length ? '<div class="bulk-approval-toolbar"><span><strong data-browser-selected-count>0</strong> selected</span><button class="button button-small" type="button" data-bulk-browser-approve disabled>Approve selected</button></div>' : ""}${browsers
         .map(
           (request) =>
-            `<article class="approval-row record-card pending"><span><span class="status-pill">Browser request</span><strong>${esc(request.full_name)}</strong><small>${esc(request.student_code)}</small></span><span class="card-actions"><button class="button button-small" data-browser-approve="${request.id}">Approve browser</button><button class="button button-small button-ghost" data-browser-reject="${request.id}">Reject</button></span></article>`,
+            `<article class="approval-row record-card pending"><label class="browser-approval-select"><input type="checkbox" data-browser-select value="${request.id}"><span class="sr-only">Select browser request for ${esc(request.full_name)}</span></label><span><span class="status-pill">Browser request</span><strong>${esc(request.full_name)}</strong><small>${esc(request.student_code)}</small></span><span class="card-actions"><button class="button button-small" data-browser-approve="${request.id}">Approve browser</button><button class="button button-small button-ghost" data-browser-reject="${request.id}">Reject</button></span></article>`,
         )
         .join("")}` ||
       '<div class="empty-state compact"><h3>No pending approvals</h3><p>New registration and browser requests will appear here.</p></div>';
@@ -168,6 +170,45 @@ export async function studentsPage() {
   }
 
   function bindBrowserActions() {
+    const selections = [
+      ...approvalHost.querySelectorAll("[data-browser-select]"),
+    ];
+    const bulkButton = approvalHost.querySelector(
+      "[data-bulk-browser-approve]",
+    );
+    const updateBulkSelection = () => {
+      const count = selections.filter((item) => item.checked).length;
+      const countHost = approvalHost.querySelector(
+        "[data-browser-selected-count]",
+      );
+      if (countHost) countHost.textContent = count;
+      if (bulkButton) bulkButton.disabled = !count;
+    };
+    selections.forEach((item) => (item.onchange = updateBulkSelection));
+    if (bulkButton)
+      bulkButton.onclick = async () => {
+        const requestIds = selections
+          .filter((item) => item.checked)
+          .map((item) => item.value);
+        if (!requestIds.length) return;
+        bulkButton.disabled = true;
+        approvalNotice.textContent = "Approving selected browsers…";
+        try {
+          const outcome = await api("/api/browser-requests/bulk-approve", {
+            method: "POST",
+            body: JSON.stringify({ request_ids: requestIds }),
+          });
+          await Promise.all([refreshApprovals(), refreshApprovedStudents()]);
+          approvalNotice.textContent = `${outcome.approved} browser${outcome.approved === 1 ? "" : "s"} approved${outcome.failed.length ? `; ${outcome.failed.length} could not be approved` : ""}.`;
+          approvalNotice.className = outcome.failed.length
+            ? "form-notice warning"
+            : "form-notice success";
+        } catch (error) {
+          approvalNotice.textContent = error.message;
+          approvalNotice.className = "form-notice error";
+          bulkButton.disabled = false;
+        }
+      };
     approvalHost
       .querySelectorAll("[data-browser-approve]")
       .forEach((button) => {

@@ -6,6 +6,8 @@ Attendance creation is enforced by the Flask API using `Asia/Colombo` time. A no
 
 Outside that window, the tutor must explicitly choose an audited extra-session reason. Client dates and availability displays are never authoritative, and only one active session can exist for a class.
 
+Active QR sessions poll an authenticated tutor-only progress endpoint every five seconds for present/expected totals and the five most recent successful scans. Browser approvals support individual review or explicit checkbox selection followed by `Approve selected`; unselected requests are never changed.
+
 Apply `supabase/migrations/20260719090000_attendance_session_scheduling.sql` through the normal Supabase migration workflow before deploying the matching backend. Do not rerun `supabase/schema.sql` against an existing database.
 
 <div align="center">

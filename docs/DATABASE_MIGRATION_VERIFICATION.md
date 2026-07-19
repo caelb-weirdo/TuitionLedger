@@ -6,6 +6,8 @@ Apply `supabase/migrations/20260719090000_attendance_session_scheduling.sql` onc
 
 Verify `is_extra_session`, `override_reason`, `scheduled_start_at`, and `scheduled_end_at`; verify both new attendance-session indexes; then run the backend tests. Existing rows remain normal because `is_extra_session` defaults to `false`.
 
+Live verification on 19 July 2026 recorded migration `20260719151048 attendance_session_scheduling` on Supabase project `tbzcnfgvbrsaprvkozdk`. The verification query returned four scheduling columns, two scheduling indexes, and zero expired sessions still labelled Active.
+
 Migration: `20260716102500_final_requirements_foundation.sql`  
 Applied: 2026-07-16  
 Database engine inspected: PostgreSQL 17.6

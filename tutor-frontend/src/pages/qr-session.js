@@ -43,11 +43,32 @@ export async function qrSessionPage() {
       const qr = await QRCode.toDataURL(url, { width: 420 });
       const expiresAt = new Date(session.expires_at).getTime();
       form.hidden = true;
-      result.innerHTML = `<div class="qr-focus" data-fullscreen-qr><div class="qr-status-row"><span class="status-pill">${session.is_extra_session ? "Extra session" : "Session active"}</span><strong data-countdown></strong></div>${session.override_reason ? `<p class="muted tutor-only">Reason: ${esc(session.override_reason)}</p>` : ""}<img src="${qr}" alt="Attendance QR for ${esc(classItem.class_name)}"><p>${esc(classItem.class_name)} · <strong>0</strong> present / ${Number(classItem.student_count || 0)} expected</p><div class="card-actions"><button type="button" class="button button-ghost" data-fullscreen>Full Screen QR</button><button type="button" class="button danger" data-end-session>End Session</button></div></div>`;
+      result.innerHTML = `<div class="qr-focus" data-fullscreen-qr><div class="qr-status-row"><span class="status-pill">${session.is_extra_session ? "Extra session" : "Session active"}</span><strong data-countdown></strong></div>${session.override_reason ? `<p class="muted tutor-only">Reason: ${esc(session.override_reason)}</p>` : ""}<img src="${qr}" alt="Attendance QR for ${esc(classItem.class_name)}"><p>${esc(classItem.class_name)} · <strong data-present-count>0</strong> present / <strong data-expected-count>${Number(classItem.student_count || 0)}</strong> expected</p><div class="recent-scans" data-recent-scans aria-live="polite"><p class="muted">Waiting for the first scan.</p></div><div class="card-actions"><button type="button" class="button button-ghost" data-fullscreen>Full Screen QR</button><button type="button" class="button danger" data-end-session>End Session</button></div></div>`;
       const countdown = result.querySelector("[data-countdown]");
       let timer;
+      let progressTimer;
+      const pollProgress = async () => {
+        try {
+          const progress = await api(
+            `/api/attendance-sessions/${session.id}/progress`,
+            { force: true },
+          );
+          result.querySelector("[data-present-count]").textContent =
+            progress.present;
+          result.querySelector("[data-expected-count]").textContent =
+            progress.expected;
+          result.querySelector("[data-recent-scans]").innerHTML = progress
+            .recent_scans.length
+            ? `<h3>Recent scans</h3>${progress.recent_scans.map((scan) => `<p><strong>${esc(scan.full_name)}</strong> <span>${esc(scan.student_code)} · ${new Date(scan.marked_at).toLocaleTimeString()}</span></p>`).join("")}`
+            : '<p class="muted">Waiting for the first scan.</p>';
+        } catch {
+          result.querySelector("[data-recent-scans]").innerHTML =
+            '<p class="muted">Live updates paused. The QR remains active.</p>';
+        }
+      };
       function expireSession() {
         clearInterval(timer);
+        clearInterval(progressTimer);
         result.innerHTML = `<div class="qr-focus"><span class="status-pill">Expired</span><h3>Session expired</h3><p>Students can no longer use this QR code.</p><a class="button" href="#attendance">View Attendance</a></div>`;
       }
       const tick = () => {
@@ -57,8 +78,25 @@ export async function qrSessionPage() {
       };
       tick();
       timer = setInterval(tick, 1000);
-      result.querySelector("[data-fullscreen]").onclick = () =>
-        result.querySelector("[data-fullscreen-qr]").requestFullscreen();
+      await pollProgress();
+      progressTimer = setInterval(pollProgress, 5000);
+      const fullscreenButton = result.querySelector("[data-fullscreen]");
+      const fullscreenQr = result.querySelector("[data-fullscreen-qr]");
+      fullscreenButton.onclick = async () => {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await fullscreenQr.requestFullscreen();
+      };
+      document.addEventListener("fullscreenchange", () => {
+        fullscreenButton.textContent = document.fullscreenElement
+          ? "Exit Full Screen"
+          : "Full Screen QR";
+        fullscreenButton.setAttribute(
+          "aria-label",
+          document.fullscreenElement
+            ? "Exit full screen QR"
+            : "Open full screen QR",
+        );
+      });
       result.querySelector("[data-end-session]").onclick = async () => {
         if (
           !(await confirmDialog({
@@ -73,6 +111,7 @@ export async function qrSessionPage() {
           method: "POST",
         });
         clearInterval(timer);
+        clearInterval(progressTimer);
         result.innerHTML = `${msg("Attendance session ended.", "success")}<p>Review present and absent students in the permanent register.</p><a class="button" href="#attendance">View Attendance</a>`;
       };
     }

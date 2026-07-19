@@ -569,6 +569,58 @@ def test_registration_qr_removes_old_expired_tokens(client, monkeypatch):
     assert "interval '7 days'" in db.calls[0][0].lower()
 
 
+def test_bulk_browser_approval_only_processes_owned_pending_requests(client, monkeypatch):
+    request_ids = [
+        "550e8400-e29b-41d4-a716-446655440041",
+        "550e8400-e29b-41d4-a716-446655440042",
+    ]
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        if "from browser_requests br" in lowered and "for update" in lowered:
+            return [
+                {"id": request_ids[0], "student_id": "student-1", "browser_id": BROWSER_ID},
+                {"id": request_ids[1], "student_id": "student-2", "browser_id": "550e8400-e29b-41d4-a716-446655440004"},
+            ]
+        if "select 1 from students" in lowered:
+            return None
+        if "update browser_requests" in lowered:
+            return {"id": _params[0]}
+        return None
+
+    db = FakeDB(execute)
+    monkeypatch.setattr(api_app, "database", lambda: db)
+    result = client.post(
+        "/api/browser-requests/bulk-approve",
+        headers=auth_headers(),
+        json={"request_ids": request_ids},
+    )
+    assert result.status_code == 200
+    assert result.json["data"] == {"approved": 2, "failed": []}
+    assert all("tutor_id=%s" in sql for sql, _ in db.calls if "from browser_requests br" in sql)
+
+
+def test_attendance_session_progress_is_tutor_owned_and_returns_recent_scans(client, monkeypatch):
+    session_id = "550e8400-e29b-41d4-a716-446655440020"
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        if "from attendance_sessions" in lowered:
+            return {"id": session_id, "status": "Active", "expires_at": "2026-07-20T12:30:00Z"}
+        if "count(*)" in lowered:
+            return {"expected": 3, "present": 2}
+        if "order by ar.marked_at desc" in lowered:
+            return [{"full_name": "Enus Caleb", "student_code": "STU001", "marked_at": "2026-07-20T12:20:00Z"}]
+        return None
+
+    monkeypatch.setattr(api_app, "database", lambda: FakeDB(execute))
+    result = client.get(f"/api/attendance-sessions/{session_id}/progress", headers=auth_headers())
+    assert result.status_code == 200
+    assert result.json["data"]["present"] == 2
+    assert result.json["data"]["expected"] == 3
+    assert result.json["data"]["recent_scans"][0]["student_code"] == "STU001"
+
+
 # --- Grade-mismatch enrollment tests ---
 
 

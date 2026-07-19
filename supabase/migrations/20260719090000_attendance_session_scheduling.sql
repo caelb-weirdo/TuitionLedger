@@ -15,6 +15,11 @@ alter table public.attendance_sessions
     or (not is_extra_session and override_reason is null)
   );
 
+-- Older sessions could remain labelled Active after their QR expired.
+update public.attendance_sessions
+set status = 'Expired'
+where status = 'Active' and expires_at <= now();
+
 create index if not exists attendance_sessions_active_class_idx
   on public.attendance_sessions (class_id, expires_at)
   where status = 'Active';

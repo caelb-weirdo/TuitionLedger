@@ -8,6 +8,10 @@ An out-of-window normal request returns HTTP 409 with `code: "OUTSIDE_CLASS_SCHE
 
 An extra request adds `is_extra_session: true`, `override_reason`, and, only when the choice is `Other`, `other_reason`. Normal expiry is capped at class end; extra sessions use their selected duration. Responses retain the existing envelope, with `code` added only for machine-readable conflicts.
 
+`GET /api/attendance-sessions/<session_id>/progress` is tutor-authenticated and ownership-scoped. It returns session state, expected/present totals, and at most five recent successful scans.
+
+`POST /api/browser-requests/bulk-approve` accepts 1–100 explicitly selected `request_ids`. It approves only owned pending requests whose students remain active and reports any rejected identifiers in `failed`.
+
 All JSON responses use `{ "success": true, "data": ... }` or `{ "success": false, "message": "..." }`. Tutor-protected endpoints require `Authorization: Bearer <access-token>`. Public endpoints expose only request state needed by the matching browser.
 
 | Method | Endpoint | Access | Purpose and important validation |

@@ -107,6 +107,40 @@ def end_session(session_id):
     )
 
 
+@attendance_routes.get("/api/attendance-sessions/<session_id>/progress")
+@auth_required
+def session_progress(session_id):
+    uuid_value(session_id, "Session")
+    with database() as db:
+        session = db.execute(
+            "select id,status,starts_at,expires_at,is_extra_session from attendance_sessions where id=%s and tutor_id=%s",
+            (session_id, tutor_id()),
+        ).fetchone()
+        if not session:
+            return response(message="Attendance session not found.", status=404)
+        totals = db.execute(
+            """select count(*)::int as expected,
+            count(*) filter (where status='Present')::int as present
+            from attendance_records where session_id=%s""",
+            (session_id,),
+        ).fetchone()
+        recent = db.execute(
+            """select s.full_name,s.student_code,ar.marked_at
+            from attendance_records ar join students s on s.id=ar.student_id
+            where ar.session_id=%s and ar.status='Present'
+            order by ar.marked_at desc limit 5""",
+            (session_id,),
+        ).fetchall()
+    return response(
+        {
+            **dict(session),
+            "expected": totals["expected"],
+            "present": totals["present"],
+            "recent_scans": [dict(row) for row in recent],
+        }
+    )
+
+
 @attendance_routes.get("/api/attendance/classes/<class_id>")
 @auth_required
 def attendance_history(class_id):

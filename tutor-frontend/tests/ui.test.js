@@ -419,6 +419,8 @@ test("attendance launch uses server authority and a controlled extra-session flo
   assert.match(source, /Start extra session/);
   assert.match(source, /override_reason/);
   assert.match(source, /requestFullscreen/);
+  assert.match(source, /exitFullscreen/);
+  assert.match(source, /fullscreenchange/);
   assert.match(source, /expires_at/);
   assert.match(source, /View Attendance/);
 });
@@ -448,4 +450,19 @@ test("students page uses keyboard-accessible progressive disclosure", () => {
   assert.match(source, /role="tab"/);
   assert.match(source, /aria-selected/);
   assert.match(source, /pending-count/);
+});
+
+test("browser approvals support explicit selection and bulk approval", () => {
+  const source = readFileSync(new URL("../src/pages/students.js", import.meta.url), "utf8");
+  assert.match(source, /data-browser-select/);
+  assert.match(source, /Approve selected/);
+  assert.match(source, /\/api\/browser-requests\/bulk-approve/);
+});
+
+test("active QR sessions securely poll progress and render recent scans", () => {
+  const source = readFileSync(new URL("../src/pages/qr-session.js", import.meta.url), "utf8");
+  assert.match(source, /attendance-sessions\/\$\{session\.id\}\/progress/);
+  assert.match(source, /recent_scans/);
+  assert.match(source, /data-present-count/);
+  assert.match(source, /5000/);
 });
