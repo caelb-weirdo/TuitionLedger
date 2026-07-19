@@ -7,6 +7,26 @@ from validators import fee_month
 fee_routes = Blueprint("fees", __name__)
 
 
+FEE_LEDGER_QUERY = """select s.id as student_id,s.student_code,s.full_name,s.grade,
+count(f.id)::int as class_count,coalesce(sum(f.amount),0) as combined_amount,
+case when bool_and(f.status='Paid') then 'Paid' else 'Unpaid' end as payment_status,
+json_agg(json_build_object('id',f.id,'class_id',f.class_id,'class_name',c.class_name,
+  'amount',f.amount,'status',f.status) order by c.class_name) as fees
+from fee_records f
+join students s on s.id=f.student_id
+join classes c on c.id=f.class_id
+join class_students cs
+  on cs.student_id=f.student_id
+ and cs.class_id=f.class_id
+ and cs.status='Active'
+where f.tutor_id=%s
+  and f.month=%s
+  and s.status='Active'
+  and c.status='Active'
+group by s.id,s.student_code,s.full_name,s.grade
+order by s.full_name"""
+
+
 def ensure_month(db, month, owner):
     return db.execute(
         """insert into fee_records(tutor_id,student_id,class_id,month,amount,status)
@@ -25,16 +45,6 @@ def fee_ledger():
     owner = tutor_id()
     with database() as db:
         ensure_month(db, month, owner)
-        rows = db.execute(
-            """select s.id as student_id,s.student_code,s.full_name,s.grade,
-            count(f.id)::int as class_count,coalesce(sum(f.amount),0) as combined_amount,
-            case when bool_and(f.status='Paid') then 'Paid' else 'Unpaid' end as payment_status,
-            json_agg(json_build_object('id',f.id,'class_id',f.class_id,'class_name',c.class_name,
-              'amount',f.amount,'status',f.status) order by c.class_name) as fees
-            from fee_records f join students s on s.id=f.student_id join classes c on c.id=f.class_id
-            where f.tutor_id=%s and f.month=%s and s.status='Active'
-            group by s.id,s.student_code,s.full_name,s.grade order by s.full_name""",
-            (owner, month),
-        ).fetchall()
+        rows = db.execute(FEE_LEDGER_QUERY, (owner, month)).fetchall()
         db.commit()
     return response([dict(row) for row in rows])

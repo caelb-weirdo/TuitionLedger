@@ -523,3 +523,42 @@ button:disabled {
 .brand small {
   display: block;
 }
+
+/* Keep registration dropdown text and the opened option list high contrast. */
+select {
+  color-scheme: dark;
+  background-color: #10211f !important;
+  color: #f7f5ef !important;
+  border-color: #93a69e !important;
+  font-weight: 650;
+}
+
+select:hover {
+  border-color: var(--gold) !important;
+}
+
+select:focus,
+select:focus-visible {
+  outline: 3px solid #d6b87840;
+  outline-offset: 1px;
+  border-color: var(--gold) !important;
+  box-shadow:
+    0 0 0 1px #d6b87870,
+    0 10px 24px #0004 !important;
+}
+
+select option,
+select optgroup {
+  color-scheme: light;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+select option:checked {
+  background-color: #dce8e3 !important;
+  color: #111827 !important;
+}
+
+select:disabled {
+  background-color: #26332f !important;
+  color: #d5ded9 !important;

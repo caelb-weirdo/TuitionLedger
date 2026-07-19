@@ -3154,3 +3154,42 @@ button:disabled {
     align-items: center;
   }
 }
+
+/* Keep every native dropdown readable on the dark Frosted Touch surfaces. */
+select {
+  color-scheme: dark;
+  background-color: #10211f !important;
+  color: #f7f5ef !important;
+  border-color: #8fa39a !important;
+  font-weight: 650;
+}
+
+select:hover {
+  border-color: #d6bc7a !important;
+}
+
+select:focus,
+select:focus-visible {
+  outline: 3px solid #d6bc7a40;
+  outline-offset: 1px;
+  border-color: #d6bc7a !important;
+  box-shadow:
+    0 0 0 1px #d6bc7a70,
+    0 10px 24px #0004 !important;
+}
+
+select option,
+select optgroup {
+  color-scheme: light;
+  background-color: #f7f8f6 !important;
+  color: #07110f !important;
+}
+
+select option:checked {
+  background-color: #d6e5de !important;
+  color: #07110f !important;
+}
+
+select:disabled {
+  background-color: #26332f !important;
+  color: #d5ded9 !important;
