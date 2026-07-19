@@ -8,6 +8,12 @@ Verify `is_extra_session`, `override_reason`, `scheduled_start_at`, and `schedul
 
 Live verification on 19 July 2026 recorded migration `20260719151048 attendance_session_scheduling` on Supabase project `tbzcnfgvbrsaprvkozdk`. The verification query returned four scheduling columns, two scheduling indexes, and zero expired sessions still labelled Active.
 
+## Catalogue fee migration
+
+Applied `20260719163000_set_catalogue_class_fees.sql` to live Supabase on 19 July 2026. The guarded migration updated only active Grade 10 and Grade 11 Maths, Science, English, Tamil, and History classes and aborted unless exactly ten rows matched.
+
+Post-migration verification returned 10 targeted classes, 10 classes priced at LKR 1,200.00, and `[1200]` as the only distinct monthly fee in the approved catalogue.
+
 Migration: `20260716102500_final_requirements_foundation.sql`  
 Applied: 2026-07-16  
 Database engine inspected: PostgreSQL 17.6

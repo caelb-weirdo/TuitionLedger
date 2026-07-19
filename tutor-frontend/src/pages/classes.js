@@ -8,7 +8,7 @@ export async function classesPage() {
   shell(
     "classes",
     "Classes",
-    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Start attendance or manage a class without opening a long workspace.</p></div><button id="open-class-form" class="button">+ Add class</button></section><p id="class-page-notice" class="form-notice" role="status" aria-live="polite"></p><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Create class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="2500"></label><div class="card-actions dialog-actions"><button class="button">Save class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><dialog id="manage-class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class roster</p><h3 id="manage-class-title">Manage class</h3></div><button id="close-manage-class" class="icon-button" type="button" aria-label="Close">&times;</button></div><div id="manage-class-content"></div></dialog><section id="class-list" class="class-card-grid">Loading classes...</section>`,
+    `<section class="page-intro class-page-intro"><div><p class="kicker">Class register</p><h2>Your teaching week, at a glance.</h2><p class="muted">Start attendance or manage a class without opening a long workspace.</p></div></section><p id="class-page-notice" class="form-notice" role="status" aria-live="polite"></p><dialog id="class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class details</p><h3 id="class-form-title">Edit class</h3></div><button id="close-class-form" class="icon-button" type="button" aria-label="Close">&times;</button></div><form id="class-form" class="grid-form"><label>Grade<select name="grade"><option>Grade 10</option><option>Grade 11</option></select></label><label>Subject<select name="subject">${subjects.map((x) => `<option>${x}</option>`).join("")}</select></label><label>Class name<input name="class_name" required placeholder="e.g. Grade 10 Mathematics"></label><label>Day<select name="day">${days.map((x, i) => `<option value="${i}">${x}</option>`).join("")}</select></label><label>Start time<input type="time" name="start_time" required></label><label>End time<input type="time" name="end_time" required></label><label>Monthly fee<input type="number" name="monthly_fee" min="0" required placeholder="1200"></label><div class="card-actions dialog-actions"><button class="button">Update class</button><button id="cancel-class-edit" class="button button-ghost" type="button">Cancel</button></div></form></dialog><dialog id="manage-class-dialog" class="management-dialog"><div class="dialog-heading"><div><p class="kicker">Class roster</p><h3 id="manage-class-title">Manage class</h3></div><button id="close-manage-class" class="icon-button" type="button" aria-label="Close">&times;</button></div><div id="manage-class-content"></div></dialog><section id="class-list" class="class-card-grid">Loading classes...</section>`,
   );
   const notice = document.querySelector("#class-page-notice");
   const enrolNotice = sessionStorage.getItem("tuitionledger:enrol-notice");
@@ -28,17 +28,12 @@ export async function classesPage() {
     editingClass = null;
     form.reset();
     dialog.close();
-    document.querySelector("#class-form-title").textContent = "Create class";
-    form.querySelector(
-      'button[type="submit"], button:not([type])',
-    ).textContent = "Save class";
   };
 
   document.querySelector("#cancel-class-edit").onclick = resetForm;
   document.querySelector("#close-class-form").onclick = resetForm;
   document.querySelector("#close-manage-class").onclick = () =>
     manageDialog.close();
-  document.querySelector("#open-class-form").onclick = () => dialog.showModal();
 
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -48,13 +43,11 @@ export async function classesPage() {
     );
     submit.disabled = true;
     try {
-      await api(
-        editingClass ? `/api/classes/${editingClass.id}` : "/api/classes",
-        {
-          method: editingClass ? "PUT" : "POST",
-          body: JSON.stringify(Object.fromEntries(new FormData(form))),
-        },
-      );
+      if (!editingClass) return;
+      await api(`/api/classes/${editingClass.id}`, {
+        method: "PUT",
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
       classesPage();
     } catch (error) {
       notice.textContent = error.message;
@@ -77,10 +70,10 @@ export async function classesPage() {
               : availability.state === "available"
                 ? "Start Attendance"
                 : "Extra Session";
-          return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3><span class="availability-badge ${availability.state}">${esc(availability.label)}</span></div><div class="class-mini-actions"><a class="button button-small ${availability.state === "available" ? "" : "button-ghost"}" href="#qr-session?class=${classItem.id}">${action}</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
+          return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div class="class-mini-details"><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3><span class="availability-badge ${availability.state}">${esc(availability.label)}</span></div><div class="class-mini-actions"><a class="button button-small ${availability.state === "available" ? "" : "button-ghost"}" href="#qr-session?class=${classItem.id}">${action}</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
         })
         .join("") ||
-      `<article class="record-card"><h3>No classes yet</h3><p>Create your first class to enrol students and start attendance.</p></article>`;
+      `<article class="record-card"><h3>No active classes</h3><p>Your class catalogue is currently unavailable.</p></article>`;
 
     async function openManager(classItem) {
       document.querySelector("#manage-class-title").textContent =

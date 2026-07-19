@@ -1587,6 +1587,22 @@ footer {
   border-top: 1px solid var(--line);
   color: var(--muted);
 }
+footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.footer-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+}
+.footer-link svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -2017,6 +2033,15 @@ footer {
 .class-mini-card .kicker {
   margin: 0;
 }
+.class-mini-details {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 18px 0 22px;
+}
+.class-mini-details h3 {
+  margin: 0;
+}
 .student-count {
   color: var(--muted);
   font-size: 12px;
@@ -2024,6 +2049,7 @@ footer {
 }
 .class-mini-actions .button {
   flex: 1;
+  min-height: 44px !important;
 }
 .class-detail-line {
   margin-top: -8px;

@@ -412,6 +412,44 @@ test("classes page filters available students by grade", () => {
   assert.match(source, /No available.*students for this class/);
 });
 
+test("renders accessible footer links with decorative outline icons", () => {
+  const source = readFileSync(
+    new URL("../src/pages/landing.js", import.meta.url),
+    "utf8",
+  );
+  assert.equal((source.match(/class="footer-link"/g) || []).length, 4);
+  assert.equal((source.match(/aria-hidden="true"/g) || []).length, 4);
+  for (const destination of ["features", "flow", "login", "faq"]) {
+    assert.match(source, new RegExp(`class="footer-link" href="#${destination}"`));
+  }
+});
+
+test("uses a fixed class catalogue while retaining class editing", () => {
+  const source = readFileSync(
+    new URL("../src/pages/classes.js", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(source, /open-class-form|\+ Add class/);
+  assert.doesNotMatch(source, /Create your first class/);
+  assert.match(source, /data-edit/);
+  assert.match(source, /Update class/);
+  assert.match(source, /method:\s*"PUT"/);
+});
+
+test("gives class availability content deliberate spacing", () => {
+  const source = readFileSync(
+    new URL("../src/pages/classes.js", import.meta.url),
+    "utf8",
+  );
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
+  assert.match(source, /class="class-mini-details"/);
+  assert.match(css, /\.class-mini-details\s*{[\s\S]*?display:\s*grid;[\s\S]*?gap:/);
+  assert.match(
+    css,
+    /\.class-mini-actions \.button\s*{[^}]*min-height:\s*44px(?:\s*!important)?;/,
+  );
+});
+
 test("attendance launch uses server authority and a controlled extra-session flow", () => {
   const source = readFileSync(new URL("../src/pages/qr-session.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /name="attendance_date"/);
