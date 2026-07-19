@@ -10,12 +10,13 @@ from flask import g, jsonify, request
 from psycopg.rows import dict_row
 
 
-def response(data=None, message=None, status=200):
+def response(data=None, message=None, status=200, **fields):
     body = {"success": status < 400}
     if data is not None:
         body["data"] = data
     if message:
         body["message"] = message
+    body.update(fields)
     return jsonify(json.loads(json.dumps(body, default=str))), status
 
 

@@ -1,5 +1,13 @@
 # TuitionLedger
 
+## Attendance schedule rules
+
+Attendance creation is enforced by the Flask API using `Asia/Colombo` time. A normal session can start on the configured weekday from 30 minutes before class through the scheduled end, inclusive. Its QR expires at the earlier of the selected 5, 10, or 15 minute duration and the class end.
+
+Outside that window, the tutor must explicitly choose an audited extra-session reason. Client dates and availability displays are never authoritative, and only one active session can exist for a class.
+
+Apply `supabase/migrations/20260719090000_attendance_session_scheduling.sql` through the normal Supabase migration workflow before deploying the matching backend. Do not rerun `supabase/schema.sql` against an existing database.
+
 <div align="center">
 
 ## A calmer way to run tuition classes

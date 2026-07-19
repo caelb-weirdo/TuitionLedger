@@ -9,6 +9,21 @@ import {
   formatDate,
   formatMonth,
 } from "../src/ui.js";
+import { classAvailability, normalizeSriLankanPhone } from "../src/core/schedule.js";
+
+test("calculates advisory class availability in Colombo time", () => {
+  const classItem = { day: 1, start_time: "16:00", end_time: "18:00" };
+  assert.equal(classAvailability(classItem, new Date("2026-07-20T10:00:00Z")).state, "available");
+  assert.equal(classAvailability(classItem, new Date("2026-07-20T09:59:00Z")).state, "upcoming");
+  assert.equal(classAvailability(classItem, new Date("2026-07-21T10:30:00Z")).state, "upcoming");
+});
+
+test("normalizes supported Sri Lankan phone formats", () => {
+  for (const value of ["0771234567", "771234567", "+94771234567"]) {
+    assert.equal(normalizeSriLankanPhone(value), "+94771234567");
+  }
+  assert.throws(() => normalizeSriLankanPhone("123"));
+});
 
 test("formats Sri Lankan dates, months, and currency consistently", () => {
   assert.equal(formatDate("2026-07-17"), "17 July 2026");
@@ -340,8 +355,8 @@ test("marks QR sessions expired and protects action buttons", () => {
   assert.match(source, /function expireSession/);
   assert.match(source, /Session expired/);
   assert.match(source, /status-pill[^`]*Expired/);
-  assert.match(source, /submitButton\.disabled = true/);
-  assert.match(source, /submitButton\.disabled = false/);
+  assert.match(source, /button\.disabled = true/);
+  assert.match(source, /button\.disabled = false/);
 });
 
 test("routes student query links into the combined frontend", () => {
@@ -395,4 +410,42 @@ test("classes page filters available students by grade", () => {
   );
   assert.match(source, /student\.grade === classItem\.grade/);
   assert.match(source, /No available.*students for this class/);
+});
+
+test("attendance launch uses server authority and a controlled extra-session flow", () => {
+  const source = readFileSync(new URL("../src/pages/qr-session.js", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /name="attendance_date"/);
+  assert.match(source, /OUTSIDE_CLASS_SCHEDULE/);
+  assert.match(source, /Start extra session/);
+  assert.match(source, /override_reason/);
+  assert.match(source, /requestFullscreen/);
+  assert.match(source, /expires_at/);
+  assert.match(source, /View Attendance/);
+});
+
+test("important tutor actions use explicit labels", () => {
+  const classes = readFileSync(new URL("../src/pages/classes.js", import.meta.url), "utf8");
+  const attendance = readFileSync(new URL("../src/pages/attendance.js", import.meta.url), "utf8");
+  assert.doesNotMatch(classes, />Start QR</);
+  assert.match(classes, /Start Attendance/);
+  assert.doesNotMatch(attendance, />Change</);
+  assert.match(attendance, /Mark \$\{record\.status === "Present" \? "Absent" : "Present"\}/);
+  assert.match(attendance, /Reset date and status/);
+});
+
+test("mobile fees expose essential card data without an 850px table", () => {
+  const fees = readFileSync(new URL("../src/pages/fees.js", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/app.css", import.meta.url), "utf8");
+  assert.match(fees, /fee-mobile-label/);
+  assert.match(fees, /WhatsApp reminder/);
+  assert.match(fees, /sort-direction/);
+  assert.doesNotMatch(css, /min-width:\s*850px/);
+});
+
+test("students page uses keyboard-accessible progressive disclosure", () => {
+  const source = readFileSync(new URL("../src/pages/students.js", import.meta.url), "utf8");
+  assert.match(source, /role="tablist"/);
+  assert.match(source, /role="tab"/);
+  assert.match(source, /aria-selected/);
+  assert.match(source, /pending-count/);
 });

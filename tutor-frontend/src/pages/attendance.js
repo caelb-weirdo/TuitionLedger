@@ -11,11 +11,12 @@ export async function attendanceWorkspacePage() {
   shell(
     "attendance",
     "Attendance",
-    `<section class="page-intro"><div><p class="kicker">Permanent register</p><h2>Review and correct attendance.</h2><p class="muted">Choose a class, date, or status. Live sessions start from Classes.</p></div></section><section class="filter-bar"><label>Class<select id="attendance-class" disabled><option>Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><label>Status<select id="attendance-status"><option value="">All statuses</option><option>Present</option><option>Absent</option></select></label><button class="button button-ghost" id="clear-attendance" type="button">Clear filters</button></section><p id="attendance-notice" class="form-notice" role="status" aria-live="polite"></p><section id="attendance-summary" class="summary-strip" aria-label="Attendance summary"></section><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list">${skeletonRows()}</div></section><dialog id="correction-dialog" class="management-dialog"><form id="correction-form"><div class="dialog-heading"><div><p class="kicker">Manual correction</p><h3 id="correction-student"></h3></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div><p id="correction-change" class="muted"></p><label>Reason<select name="reason-choice" required><option value="">Choose a reason</option><option>QR scanning problem</option><option>Tutor confirmed attendance</option><option>Student arrived late</option><option>Incorrect record</option><option>Other</option></select></label><label data-other hidden>Other reason<textarea name="other-reason" maxlength="300"></textarea></label><p id="correction-notice" class="form-notice" role="status" aria-live="polite"></p><div class="dialog-actions"><button type="button" class="button button-ghost" data-close>Cancel</button><button class="button">Save correction</button></div></form></dialog>`,
+    `<section class="page-intro"><div><p class="kicker">Permanent register</p><h2>Review and correct attendance.</h2><p class="muted">Choose a class, date, status, or student. Live sessions start from Classes.</p></div></section><section class="filter-bar"><label>Class<select id="attendance-class" disabled><option>Loading classes…</option></select></label><label>Date<input id="attendance-date" type="date"></label><label>Status<select id="attendance-status"><option value="">All statuses</option><option>Present</option><option>Absent</option></select></label><label>Student<input id="attendance-search" type="search" placeholder="Name or Student ID"></label><button class="button button-ghost" id="clear-attendance" type="button">Reset date and status</button></section><p id="attendance-notice" class="form-notice" role="status" aria-live="polite"></p><section id="attendance-summary" class="summary-strip" aria-label="Attendance summary"></section><section class="panel attendance-history"><div class="section-heading"><p class="kicker">Register</p><h3 id="attendance-title">Select a class</h3></div><div id="attendance-list">${skeletonRows()}</div></section><dialog id="correction-dialog" class="management-dialog"><form id="correction-form"><div class="dialog-heading"><div><p class="kicker">Manual correction</p><h3 id="correction-student"></h3></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div><p id="correction-change" class="muted"></p><label>Reason<select name="reason-choice" required><option value="">Choose a reason</option><option>QR scanning problem</option><option>Tutor confirmed attendance</option><option>Student arrived late</option><option>Incorrect record</option><option>Other</option></select></label><label data-other hidden>Other reason<textarea name="other-reason" maxlength="300"></textarea></label><p id="correction-notice" class="form-notice" role="status" aria-live="polite"></p><div class="dialog-actions"><button type="button" class="button button-ghost" data-close>Cancel</button><button class="button">Save correction</button></div></form></dialog>`,
   );
   const classSelect = document.querySelector("#attendance-class");
   const dateInput = document.querySelector("#attendance-date");
   const statusSelect = document.querySelector("#attendance-status");
+  const searchInput = document.querySelector("#attendance-search");
   const listHost = document.querySelector("#attendance-list");
   const notice = document.querySelector("#attendance-notice");
   const dialog = document.querySelector("#correction-dialog");
@@ -26,10 +27,17 @@ export async function attendanceWorkspacePage() {
   let pending = null;
 
   function render() {
+    const query = searchInput.value.trim().toLowerCase();
     const visible = filterAttendance(
       records,
       dateInput.value,
       statusSelect.value,
+    ).filter(
+      (record) =>
+        !query ||
+        `${record.full_name} ${record.student_code}`
+          .toLowerCase()
+          .includes(query),
     );
     const totals = attendanceSummary(visible);
     document.querySelector("#attendance-summary").innerHTML =
@@ -41,7 +49,7 @@ export async function attendanceWorkspacePage() {
       ? `<div class="attendance-directory"><div class="attendance-directory-head"><span>Student</span><span>Date and method</span><span>Status</span><span></span></div>${visible
           .map(
             (record) =>
-              `<article class="attendance-directory-row record-card"><span class="attendance-student"><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)}</small></span><span class="attendance-meta">${formatDate(record.attendance_date)}<small>${esc(record.marked_method)}</small></span><span class="attendance-status ${record.status.toLowerCase()}">${record.status === "Present" ? "✓" : "×"} ${esc(record.status)}</span><button class="button button-small button-ghost" data-record="${record.id}">Change</button></article>`,
+              `<article class="attendance-directory-row record-card"><span class="attendance-student"><strong>${esc(record.full_name)}</strong><small>${esc(record.student_code)}</small></span><span class="attendance-meta">${formatDate(record.attendance_date)}<small>${esc(record.marked_method)}${record.is_extra_session ? " · Extra session" : ""}</small></span><span class="attendance-status ${record.status.toLowerCase()}">${record.status === "Present" ? "✓" : "×"} ${esc(record.status)}</span><button class="button button-small button-ghost" data-record="${record.id}">Mark ${record.status === "Present" ? "Absent" : "Present"}</button></article>`,
           )
           .join("")}</div>`
       : '<div class="empty-state"><h3>No attendance records</h3><p>Try clearing the filters or start attendance from Classes.</p></div>';
@@ -131,6 +139,7 @@ export async function attendanceWorkspacePage() {
     }
   };
   [dateInput, statusSelect].forEach((control) => (control.onchange = render));
+  searchInput.oninput = render;
   document.querySelector("#clear-attendance").onclick = () => {
     dateInput.value = "";
     statusSelect.value = "";

@@ -1,6 +1,7 @@
 import "./student.css";
 import { publicApi as api } from "../core/public-api.js";
 import { approvalPollDelay } from "./polling.js";
+import { normalizeSriLankanPhone } from "../core/schedule.js";
 
 let app;
 let registrationToken;
@@ -122,7 +123,11 @@ function result(eyebrow, title, message, kind = "success", retry) {
   );
   document.querySelector("#retry")?.addEventListener("click", retry);
   document.querySelector("#done")?.addEventListener("click", () => {
-    location.href = `${location.origin}/`;
+    shell(
+      "COMPLETE",
+      "You’re all set.",
+      '<p class="intro">This step is complete. You can safely close this tab.</p>',
+    );
   });
 }
 
@@ -144,6 +149,10 @@ function registration() {
       '<span class="mini-spinner" aria-hidden="true"></span><strong>Submitting your registration</strong><small>Please keep this page open.</small>';
     const values = Object.fromEntries(new FormData(form));
     try {
+      values.student_phone = normalizeSriLankanPhone(values.student_phone);
+      values.guardian_whatsapp = normalizeSriLankanPhone(
+        values.guardian_whatsapp,
+      );
       const request = await api("/api/register-student", {
         method: "POST",
         body: JSON.stringify({
@@ -219,7 +228,7 @@ async function attendance() {
       result(
         "ATTENDANCE",
         "Attendance marked Present.",
-        "Your attendance was saved successfully.",
+        `${data.student?.full_name || "Student"} · ${data.attendance_date || "Today"} · ${data.recorded_at ? new Date(data.recorded_at).toLocaleTimeString() : "Recorded now"}`,
       );
     }
   } catch (error) {

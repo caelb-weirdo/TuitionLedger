@@ -63,8 +63,13 @@ create table attendance_sessions (
   id uuid primary key default gen_random_uuid(), tutor_id uuid not null references tutors(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade, attendance_date date not null default current_date, qr_token text not null unique,
   starts_at timestamptz not null default now(), expires_at timestamptz not null,
-  duration_minutes smallint not null check (duration_minutes in (5,10,15)), status text not null default 'Active' check (status in ('Active','Ended','Expired'))
+  duration_minutes smallint not null check (duration_minutes in (5,10,15)), status text not null default 'Active' check (status in ('Active','Ended','Expired')),
+  is_extra_session boolean not null default false, override_reason text,
+  scheduled_start_at timestamptz, scheduled_end_at timestamptz,
+  constraint attendance_sessions_extra_reason_check check ((is_extra_session and override_reason is not null and char_length(btrim(override_reason)) between 3 and 300) or (not is_extra_session and override_reason is null))
 );
+create index attendance_sessions_active_class_idx on attendance_sessions(class_id,expires_at) where status='Active';
+create unique index attendance_sessions_one_active_class_idx on attendance_sessions(class_id) where status='Active';
 create table attendance_records (
   id uuid primary key default gen_random_uuid(), session_id uuid not null references attendance_sessions(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade, student_id uuid not null references students(id) on delete cascade,

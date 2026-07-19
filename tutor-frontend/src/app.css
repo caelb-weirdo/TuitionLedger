@@ -3,6 +3,94 @@
   position: relative;
   width: 100%;
 }
+
+/* UX and attendance scheduling refinements */
+.availability-badge,
+.pending-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface, #fff);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.availability-badge.available {
+  color: #17623a;
+  border-color: #91c9aa;
+  background: #edf9f2;
+}
+.availability-badge.ended {
+  color: #7b4d10;
+  background: #fff8e8;
+}
+.student-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  overflow-x: auto;
+}
+.student-tabs [role="tab"] {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.student-tabs [aria-selected="true"] {
+  color: white;
+  background: var(--primary, #3157a4);
+  border-color: transparent;
+}
+.fee-mobile-label,
+.mobile-action-label {
+  display: none;
+}
+.qr-focus:fullscreen {
+  display: grid;
+  place-content: center;
+  background: white;
+  padding: 24px;
+}
+
+@media (max-width: 700px) {
+  .fee-ledger-head {
+    display: none;
+  }
+  .fee-ledger-row {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 10px;
+    padding: 16px;
+  }
+  .fee-ledger-row > *:not(.row-expander):not(.fee-student):not(.fee-reminder) {
+    grid-column: 2 / -1;
+  }
+  .fee-reminder {
+    grid-column: 2 / -1;
+  }
+  .fee-mobile-label {
+    display: inline;
+    margin-right: 8px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .mobile-action-label {
+    display: inline;
+    margin-left: 8px;
+  }
+  .whatsapp-icon {
+    width: auto;
+    min-width: 44px;
+    padding: 0 12px;
+  }
+}
 .password-wrap input {
   width: 100%;
   min-height: 48px;
@@ -595,19 +683,19 @@ body {
   overflow: hidden;
   isolation: isolate;
   border-radius: 25px !important;
-  transform: rotate(-1.2deg);
+  transform: none;
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
 .dashboard-bento .summary-card:nth-child(2) {
-  transform: rotate(1.4deg);
+  transform: none;
 }
 .dashboard-bento .summary-card:nth-child(3) {
-  transform: rotate(-0.7deg);
+  transform: none;
 }
 .dashboard-bento .summary-card:nth-child(4) {
-  transform: rotate(1deg);
+  transform: none;
 }
 .dashboard-bento .summary-card:hover {
   transform: translateY(-5px) rotate(0);
@@ -2496,7 +2584,7 @@ footer {
   display: grid;
   grid-template-columns: 40px minmax(190px, 1.8fr) 110px 80px 120px 130px 80px;
   gap: 12px;
-  min-width: 850px;
+  min-width: 0;
   align-items: center;
 }
 .fee-ledger-head {

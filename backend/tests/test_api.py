@@ -6,6 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 import app as api_app
+import routes.attendance as attendance_route
 
 REQUEST_ID = "550e8400-e29b-41d4-a716-446655440001"
 FEE_ID = "550e8400-e29b-41d4-a716-446655440002"
@@ -173,6 +174,7 @@ def test_duplicate_attendance_returns_already_marked(client, monkeypatch):
 
 
 def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
+    monkeypatch.setattr(attendance_route, "current_time", lambda: datetime.fromisoformat("2026-07-16T10:00:00+00:00"))
     session = {
         "id": "550e8400-e29b-41d4-a716-446655440020",
         "class_id": "550e8400-e29b-41d4-a716-446655440010",
@@ -181,8 +183,10 @@ def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
     }
 
     def execute(sql, _params):
-        if "select 1 from classes" in sql:
-            return {"owned": True}
+        if "from classes" in sql:
+            return {"id": session["class_id"], "tutor_id": "tutor-1", "day": 4, "start_time": "00:00", "end_time": "23:59"}
+        if "status='Active'" in sql and "attendance_sessions" in sql and "select" in sql:
+            return None
         if "insert into attendance_sessions" in sql:
             return session
         return None
@@ -194,7 +198,6 @@ def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
         headers=auth_headers(),
         json={
             "class_id": "550e8400-e29b-41d4-a716-446655440010",
-            "attendance_date": "2026-07-16",
             "duration_minutes": 5,
         },
     )
@@ -207,6 +210,61 @@ def test_new_session_reuses_daily_attendance_record(client, monkeypatch):
     assert result.status_code == 201
     assert "on conflict(class_id,student_id,attendance_date)" in attendance_insert
     assert "session_id=excluded.session_id" in attendance_insert
+
+
+def _scheduled_db(session=None, active=None):
+    class_row = {
+        "id": "550e8400-e29b-41d4-a716-446655440010",
+        "tutor_id": "tutor-1",
+        "day": 1,
+        "start_time": "16:00",
+        "end_time": "18:00",
+    }
+
+    def execute(sql, _params):
+        lowered = sql.lower()
+        if "from classes" in lowered:
+            return class_row
+        if "from attendance_sessions" in lowered and "status='active'" in lowered:
+            return active
+        if "insert into attendance_sessions" in lowered:
+            return session or {"id": "session-1", "qr_token": QR_TOKEN, "expires_at": "2026-07-20T12:30:00+00:00"}
+        return None
+
+    return FakeDB(execute)
+
+
+def test_session_outside_schedule_returns_structured_override_details(client, monkeypatch):
+    monkeypatch.setattr(attendance_route, "current_time", lambda: datetime.fromisoformat("2026-07-20T09:59:00+00:00"))
+    monkeypatch.setattr(api_app, "database", lambda: _scheduled_db())
+    result = client.post("/api/attendance-sessions", headers=auth_headers(), json={"class_id": "550e8400-e29b-41d4-a716-446655440010", "duration_minutes": 10})
+    assert result.status_code == 409
+    assert result.json["code"] == "OUTSIDE_CLASS_SCHEDULE"
+    assert result.json["data"]["extra_session_allowed"] is True
+
+
+def test_normal_session_rejects_arbitrary_client_date(client, monkeypatch):
+    monkeypatch.setattr(attendance_route, "current_time", lambda: datetime.fromisoformat("2026-07-20T10:00:00+00:00"))
+    monkeypatch.setattr(api_app, "database", lambda: _scheduled_db())
+    result = client.post("/api/attendance-sessions", headers=auth_headers(), json={"class_id": "550e8400-e29b-41d4-a716-446655440010", "duration_minutes": 10, "attendance_date": "2026-07-19"})
+    assert result.status_code == 422
+
+
+def test_extra_session_requires_audited_reason(client, monkeypatch):
+    monkeypatch.setattr(attendance_route, "current_time", lambda: datetime.fromisoformat("2026-07-21T10:00:00+00:00"))
+    monkeypatch.setattr(api_app, "database", lambda: _scheduled_db())
+    result = client.post("/api/attendance-sessions", headers=auth_headers(), json={"class_id": "550e8400-e29b-41d4-a716-446655440010", "duration_minutes": 10, "is_extra_session": True})
+    assert result.status_code == 422
+
+
+def test_active_session_is_returned_instead_of_replaced(client, monkeypatch):
+    active = {"id": "existing-session", "expires_at": "2026-07-20T11:00:00+00:00"}
+    monkeypatch.setattr(attendance_route, "current_time", lambda: datetime.fromisoformat("2026-07-20T10:00:00+00:00"))
+    monkeypatch.setattr(api_app, "database", lambda: _scheduled_db(active=active))
+    result = client.post("/api/attendance-sessions", headers=auth_headers(), json={"class_id": "550e8400-e29b-41d4-a716-446655440010", "duration_minutes": 10})
+    assert result.status_code == 409
+    assert result.json["code"] == "ACTIVE_SESSION_EXISTS"
+    assert result.json["data"]["id"] == "existing-session"
 
 
 def test_registration_approval_generates_student_id(client, monkeypatch):

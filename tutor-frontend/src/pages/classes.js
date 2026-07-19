@@ -1,5 +1,6 @@
 import { api, esc, msg } from "../core/api.js";
 import { days, subjects } from "../core/config.js";
+import { classAvailability } from "../core/schedule.js";
 import { shell } from "./layout.js";
 import { confirmDialog } from "../ui.js";
 
@@ -69,7 +70,14 @@ export async function classesPage() {
       classes
         .map((classItem) => {
           const count = Number(classItem.student_count || 0);
-          return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3></div><div class="class-mini-actions"><a class="button button-small" href="#qr-session?class=${classItem.id}">Start QR</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
+          const availability = classAvailability(classItem);
+          const action =
+            availability.state === "active"
+              ? "Open Active Session"
+              : availability.state === "available"
+                ? "Start Attendance"
+                : "Extra Session";
+          return `<article class="class-mini-card" data-class="${classItem.id}"><div class="class-mini-top"><span class="class-day">${esc(days[classItem.day]).slice(0, 3)}</span><span class="student-count">${count} student${count === 1 ? "" : "s"}</span></div><div><p class="kicker">${esc(classItem.start_time)}–${esc(classItem.end_time)}</p><h3>${esc(classItem.class_name)}</h3><span class="availability-badge ${availability.state}">${esc(availability.label)}</span></div><div class="class-mini-actions"><a class="button button-small ${availability.state === "available" ? "" : "button-ghost"}" href="#qr-session?class=${classItem.id}">${action}</a><button class="button button-small button-ghost" data-manage="${classItem.id}">Manage</button></div></article>`;
         })
         .join("") ||
       `<article class="record-card"><h3>No classes yet</h3><p>Create your first class to enrol students and start attendance.</p></article>`;

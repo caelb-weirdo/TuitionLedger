@@ -6,7 +6,19 @@ export async function dashboard() {
   shell(
     "dashboard",
     "Dashboard",
-    `<section class="page-intro"><p class="kicker">Today at a glance</p><h2>Keep every class moving.</h2><p class="muted">Overview only: open a workspace page when you need to make a change.</p></section><div class="dashboard-bento"><div id="stats" class="dashboard-grid">${["Total students", "Total classes", "Pending registrations", "Unpaid fees"].map((label) => `<article class="summary-card"><small>${label}</small><strong>—</strong></article>`).join("")}</div><section class="dashboard-overview"><article class="panel"><div class="section-heading"><p class="kicker">Schedule</p><h3>Today's classes</h3></div><div id="today-classes"><p class="muted">Loading schedule…</p></div></article><article class="panel"><div class="section-heading"><p class="kicker">Activity</p><h3>Recent activity</h3></div><div id="recent-activity"><p class="muted">Loading activity…</p></div></article></section></div>`,
+    `<section class="page-intro"><p class="kicker">Today at a glance</p><h2>Keep every class moving.</h2><p class="muted">Overview only: open a workspace page when you need to make a change.</p></section><div class="dashboard-bento"><div id="stats" class="dashboard-grid">${[
+      ["Total students", "#students"],
+      ["Total classes", "#classes"],
+      ["Pending registrations", "#students?section=approvals"],
+      ["Unpaid fees", "#fees?status=Unpaid"],
+    ]
+      .map(
+        ([label, href]) =>
+          `<a class="summary-card" href="${href}"><small>${label}</small><strong>—</strong></a>`,
+      )
+      .join(
+        "",
+      )}</div><section class="dashboard-overview"><article class="panel"><div class="section-heading"><p class="kicker">Schedule</p><h3>Today's classes</h3></div><div id="today-classes"><p class="muted">Loading schedule…</p></div></article><article class="panel"><div class="section-heading"><p class="kicker">Activity</p><h3>Recent activity</h3></div><div id="recent-activity"><p class="muted">Loading activity…</p></div></article></section></div>`,
     { loadPendingBadge: false },
   );
   try {
@@ -28,7 +40,7 @@ export async function dashboard() {
       ? data.today_classes
           .map(
             (item) =>
-              `<a class="overview-row" href="#classes"><span><strong>${esc(item.class_name)}</strong><small>${esc(item.grade)} · ${esc(item.subject)}</small></span><time>${esc(item.start_time)}–${esc(item.end_time)}</time></a>`,
+              `<a class="overview-row" href="#qr-session?class=${item.id}"><span><strong>${esc(item.class_name)}</strong><small>${esc(item.grade)} · ${esc(item.subject)}</small></span><span><time>${esc(item.start_time)}–${esc(item.end_time)}</time><small>Start Attendance</small></span></a>`,
           )
           .join("")
       : `<p class="muted">No classes scheduled for ${days[today]}.</p>`;

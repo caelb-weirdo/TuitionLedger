@@ -84,8 +84,13 @@ export async function api(path, options = {}, retried = false) {
     clearAuth();
     location.hash = "#login";
   }
-  if (!response.ok || body?.success === false)
-    throw Error(body?.message || "That action could not be completed.");
+  if (!response.ok || body?.success === false) {
+    const error = Error(body?.message || "That action could not be completed.");
+    error.code = body?.code;
+    error.data = body?.data;
+    error.status = response.status;
+    throw error;
+  }
   if (method === "GET") {
     responseCache.set(cacheKey, { data: body.data, savedAt: Date.now() });
   } else {

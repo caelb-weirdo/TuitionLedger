@@ -19,12 +19,12 @@ def test_phone_normalizes_local_number():
     assert sri_lankan_phone("0771234567") == "+94771234567"
 
 
-@pytest.mark.parametrize("value", ["+94771234567", "0712345678"])
+@pytest.mark.parametrize("value", ["+94771234567", "0712345678", "771234567", "94771234567"])
 def test_phone_accepts_supported_formats(value):
     assert sri_lankan_phone(value).startswith("+94")
 
 
-@pytest.mark.parametrize("value", ["", "94771234567", "+94abc", "+9477123"])
+@pytest.mark.parametrize("value", ["", "+94abc", "+9477123"])
 def test_phone_rejects_invalid_values(value):
     with pytest.raises(ValidationError):
         sri_lankan_phone(value)

@@ -1,5 +1,6 @@
 import secrets
 from datetime import datetime, timedelta, timezone
+import psycopg
 from flask import Blueprint, request
 
 from core import auth_required, database, response, tutor_id
@@ -12,8 +13,13 @@ from validators import (
     secure_token,
     uuid_value,
 )
+from scheduling import schedule_window, session_expiry, validate_override
 
 attendance_routes = Blueprint("attendance", __name__)
+
+
+def current_time():
+    return datetime.now(timezone.utc)
 
 
 @attendance_routes.post("/api/attendance-sessions")
@@ -22,42 +28,63 @@ def create_session():
     data = request.get_json(silent=True) or {}
     class_id = str(uuid_value(data.get("class_id"), "Class"))
     duration = qr_duration(data.get("duration_minutes"))
-    selected_date = attendance_date(
-        data.get("attendance_date") or datetime.now(timezone.utc).date().isoformat()
-    )
-    now = datetime.now(timezone.utc)
-    expires = now + timedelta(minutes=duration)
+    now = current_time()
+    is_extra = data.get("is_extra_session") is True
     with database() as db:
         owned = db.execute(
-            "select 1 from classes where id=%s and tutor_id=%s and status='Active'",
+            "select * from classes where id=%s and tutor_id=%s and status='Active' for update",
             (class_id, tutor_id()),
         ).fetchone()
         if not owned:
             return response(message="Class not found.", status=404)
         db.execute(
-            "update attendance_sessions set status='Ended' where class_id=%s and tutor_id=%s and status='Active'",
-            (class_id, tutor_id()),
+            "update attendance_sessions set status='Expired' where class_id=%s and tutor_id=%s and status='Active' and expires_at<=%s",
+            (class_id, tutor_id(), now),
         )
-        row = db.execute(
-            """insert into attendance_sessions(tutor_id,class_id,attendance_date,qr_token,starts_at,expires_at,duration_minutes,status)
-            values(%s,%s,%s,%s,%s,%s,%s,'Active') returning *""",
-            (
-                tutor_id(),
-                class_id,
-                selected_date,
-                secrets.token_urlsafe(32),
-                now,
-                expires,
-                duration,
-            ),
+        active = db.execute(
+            "select id,expires_at from attendance_sessions where class_id=%s and tutor_id=%s and status='Active' and expires_at>%s for update",
+            (class_id, tutor_id(), now),
         ).fetchone()
+        if active:
+            return response(dict(active), "An attendance session is already active for this class.", 409, code="ACTIVE_SESSION_EXISTS")
+        window = schedule_window(owned, now)
+        if data.get("attendance_date"):
+            supplied_date = attendance_date(data["attendance_date"])
+            if supplied_date.isoformat() != window["attendance_date"]:
+                return response(message="Attendance date must be today's Colombo date.", status=422)
+        try:
+            override_reason = validate_override(
+                is_extra,
+                data.get("override_reason"),
+                data.get("other_reason"),
+            )
+        except ValueError as error:
+            return response(message=str(error), status=422)
+        if not window["available_now"] and not is_extra:
+            schedule_data = {key: value for key, value in window.items() if key not in {"available_now", "scheduled_start_at", "scheduled_end_at"}}
+            return response(schedule_data, "This class is outside its normal attendance window.", 409, code="OUTSIDE_CLASS_SCHEDULE")
+        expires = session_expiry(now, duration, window, is_extra)
+        try:
+            row = db.execute(
+                """insert into attendance_sessions(tutor_id,class_id,attendance_date,qr_token,starts_at,expires_at,duration_minutes,status,is_extra_session,override_reason,scheduled_start_at,scheduled_end_at)
+                values(%s,%s,%s,%s,%s,%s,%s,'Active',%s,%s,%s,%s) returning *""",
+                (
+                    tutor_id(), class_id, window["attendance_date"], secrets.token_urlsafe(32), now,
+                    expires, duration, is_extra, override_reason,
+                    window["scheduled_start_at"] if not is_extra else None,
+                    window["scheduled_end_at"] if not is_extra else None,
+                ),
+            ).fetchone()
+        except psycopg.errors.UniqueViolation:
+            db.rollback()
+            return response(message="An attendance session is already active for this class.", status=409, code="ACTIVE_SESSION_EXISTS")
         db.execute(
             """insert into attendance_records(session_id,class_id,student_id,attendance_date,status,marked_method)
             select %s,%s,cs.student_id,%s,'Absent','QR' from class_students cs join students s on s.id=cs.student_id
             where cs.class_id=%s and cs.status='Active' and s.status='Active'
             on conflict(class_id,student_id,attendance_date) do update
             set session_id=excluded.session_id,updated_at=now()""",
-            (row["id"], class_id, selected_date, class_id),
+            (row["id"], class_id, window["attendance_date"], class_id),
         )
         db.commit()
     return response(dict(row), "Attendance session created.", 201)
@@ -92,7 +119,8 @@ def attendance_history(class_id):
         extra = " and ar.attendance_date=%s"
     with database() as db:
         rows = db.execute(
-            """select ar.*,s.student_code,s.full_name from attendance_records ar join students s on s.id=ar.student_id
+            """select ar.*,s.student_code,s.full_name,ats.is_extra_session,ats.override_reason from attendance_records ar join students s on s.id=ar.student_id
+            join attendance_sessions ats on ats.id=ar.session_id
             join classes c on c.id=ar.class_id where ar.class_id=%s and c.tutor_id=%s"""
             + extra
             + " order by ar.attendance_date desc,s.full_name",
@@ -165,7 +193,15 @@ def scan():
             return response(message="Attendance record is unavailable.", status=409)
         db.commit()
     return response(
-        {"result": "Present", "attendance": dict(row)}, "Attendance marked Present."
+        {
+            "result": "Present",
+            "attendance": dict(row),
+            "student": {"full_name": student["full_name"], "student_code": student["student_code"]},
+            "class": {"id": session["class_id"]},
+            "attendance_date": str(session["attendance_date"]),
+            "recorded_at": str(row["marked_at"]),
+        },
+        "Attendance marked Present.",
     )
 
 

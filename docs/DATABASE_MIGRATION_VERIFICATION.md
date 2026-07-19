@@ -1,5 +1,11 @@
 # Final Requirements Migration Verification
 
+## Attendance scheduling migration
+
+Apply `supabase/migrations/20260719090000_attendance_session_scheduling.sql` once through Supabase migrations. It adds non-destructive audit fields to `attendance_sessions`, validates extra-session reasons, indexes active lookup, and adds a partial unique index preventing two active sessions for one class.
+
+Verify `is_extra_session`, `override_reason`, `scheduled_start_at`, and `scheduled_end_at`; verify both new attendance-session indexes; then run the backend tests. Existing rows remain normal because `is_extra_session` defaults to `false`.
+
 Migration: `20260716102500_final_requirements_foundation.sql`  
 Applied: 2026-07-16  
 Database engine inspected: PostgreSQL 17.6

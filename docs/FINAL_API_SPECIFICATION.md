@@ -1,5 +1,13 @@
 # Final API Specification
 
+## Scheduled attendance creation
+
+`POST /api/attendance-sessions` accepts `class_id` and `duration_minutes` (`5`, `10`, or `15`). The server derives today and the timetable window in `Asia/Colombo`; an optional legacy `attendance_date` must equal today's Colombo date.
+
+An out-of-window normal request returns HTTP 409 with `code: "OUTSIDE_CLASS_SCHEDULE"` and schedule details in `data`. An existing active session returns HTTP 409 with `code: "ACTIVE_SESSION_EXISTS"` and safe owned-session details.
+
+An extra request adds `is_extra_session: true`, `override_reason`, and, only when the choice is `Other`, `other_reason`. Normal expiry is capped at class end; extra sessions use their selected duration. Responses retain the existing envelope, with `code` added only for machine-readable conflicts.
+
 All JSON responses use `{ "success": true, "data": ... }` or `{ "success": false, "message": "..." }`. Tutor-protected endpoints require `Authorization: Bearer <access-token>`. Public endpoints expose only request state needed by the matching browser.
 
 | Method | Endpoint | Access | Purpose and important validation |

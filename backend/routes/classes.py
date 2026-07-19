@@ -34,7 +34,8 @@ def classes():
     with database() as db:
         rows = db.execute(
             """select c.*,
-            count(cs.student_id) filter (where cs.status='Active')::int as student_count
+            count(cs.student_id) filter (where cs.status='Active')::int as student_count,
+            (select ats.id from attendance_sessions ats where ats.class_id=c.id and ats.status='Active' and ats.expires_at>now() order by ats.starts_at desc limit 1) as active_session_id
             from classes c
             left join class_students cs on cs.class_id=c.id
             where c.tutor_id=%s and c.status='Active'
@@ -52,7 +53,8 @@ def get_class(class_id):
     with database() as db:
         row = db.execute(
             """select c.*,
-            count(cs.student_id) filter (where cs.status='Active')::int as student_count
+            count(cs.student_id) filter (where cs.status='Active')::int as student_count,
+            (select ats.id from attendance_sessions ats where ats.class_id=c.id and ats.status='Active' and ats.expires_at>now() order by ats.starts_at desc limit 1) as active_session_id
             from classes c
             left join class_students cs on cs.class_id=c.id
             where c.id=%s and c.tutor_id=%s and c.status='Active'

@@ -48,10 +48,11 @@ export async function studentsPage() {
   shell(
     "students",
     "Students",
-    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Generate one registration QR, review incoming requests, and manage approved students without losing your place.</p></section>
-    <section class="student-workspace-section panel" aria-labelledby="registration-heading"><div class="student-section-heading"><div><p class="kicker">Registration</p><h2 id="registration-heading">Registration QR</h2><p class="muted">Students scan this QR to submit a registration request.</p></div><button id="registration-qr" class="icon-action primary" aria-label="Generate registration QR" data-tooltip="Generate registration QR">${qrIcon}</button></div><div id="registration-qr-output" class="registration-qr-output"><div class="empty-state compact"><h3>No active QR</h3><p>Generate a QR when students are ready to register.</p></div></div></section>
-    <section class="student-workspace-section" aria-labelledby="approvals-heading"><div class="student-section-heading"><div><p class="kicker">Incoming requests</p><h2 id="approvals-heading">Approvals</h2><p class="muted">Open student registrations for full details. Browser requests stay here for quick review.</p></div></div><p id="approval-notice" class="form-notice" role="status" aria-live="polite"></p><div id="approval-content" class="approval-list">Loading approvals…</div></section>
-    <section class="student-workspace-section" aria-labelledby="approved-heading"><div class="student-section-heading approved-student-heading"><div><p class="kicker">Directory</p><h2 id="approved-heading">Approved students</h2><p class="muted">Refresh and search this directory without changing the QR or approvals above.</p></div><div class="data-toolbar icon-toolbar"><button id="add-student" class="icon-action primary" aria-label="Add student" data-tooltip="Add student">${addIcon}</button><button id="refresh-approved-students" class="icon-action" aria-label="Refresh approved students" data-tooltip="Refresh approved students">${refreshIcon}</button><input id="student-search" type="search" placeholder="Search approved students" aria-label="Search approved students"></div></div><p id="approved-student-notice" class="form-notice" role="status" aria-live="polite"></p><div id="approved-student-content" class="management-records">Loading approved students…</div></section>`,
+    `<section class="page-intro"><p class="kicker">Student directory</p><h2>Approve and maintain student records.</h2><p class="muted">Choose one focused section and keep your place while requests update.</p></section>
+    <div class="student-tabs" role="tablist" aria-label="Student sections"><button role="tab" aria-selected="true" data-student-tab="students">Students</button><button role="tab" aria-selected="false" data-student-tab="approvals">Approvals <span class="pending-count" data-pending-count>0</span></button><button role="tab" aria-selected="false" data-student-tab="registration">Registration QR</button></div>
+    <section class="student-workspace-section panel" data-student-panel="registration" hidden aria-labelledby="registration-heading"><div class="student-section-heading"><div><p class="kicker">Registration</p><h2 id="registration-heading">Registration QR</h2><p class="muted">Students scan this QR to submit a registration request.</p></div><button id="registration-qr" class="icon-action primary" aria-label="Generate registration QR" data-tooltip="Generate registration QR">${qrIcon}</button></div><div id="registration-qr-output" class="registration-qr-output"><div class="empty-state compact"><h3>No active QR</h3><p>Generate a QR when students are ready to register.</p></div></div></section>
+    <section class="student-workspace-section" data-student-panel="approvals" hidden aria-labelledby="approvals-heading"><div class="student-section-heading"><div><p class="kicker">Incoming requests</p><h2 id="approvals-heading">Approvals</h2><p class="muted">Open student registrations for full details. Browser requests stay here for quick review.</p></div></div><p id="approval-notice" class="form-notice" role="status" aria-live="polite"></p><div id="approval-content" class="approval-list">Loading approvals…</div></section>
+    <section class="student-workspace-section" data-student-panel="students" aria-labelledby="approved-heading"><div class="student-section-heading approved-student-heading"><div><p class="kicker">Directory</p><h2 id="approved-heading">Approved students</h2><p class="muted">Refresh and search this directory without changing the QR or approvals above.</p></div><div class="data-toolbar icon-toolbar"><button id="add-student" class="icon-action primary" aria-label="Add student" data-tooltip="Add student">${addIcon}</button><button id="refresh-approved-students" class="icon-action" aria-label="Refresh approved students" data-tooltip="Refresh approved students">${refreshIcon}</button><input id="student-search" type="search" placeholder="Search approved students" aria-label="Search approved students"></div></div><p id="approved-student-notice" class="form-notice" role="status" aria-live="polite"></p><div id="approved-student-content" class="management-records">Loading approved students…</div></section>`,
   );
 
   const approvalHost = document.querySelector("#approval-content");
@@ -59,6 +60,30 @@ export async function studentsPage() {
   const approvedHost = document.querySelector("#approved-student-content");
   const approvedNotice = document.querySelector("#approved-student-notice");
   const search = document.querySelector("#student-search");
+  const activateTab = (name) => {
+    document.querySelectorAll("[data-student-tab]").forEach((tab) => {
+      const active = tab.dataset.studentTab === name;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+    });
+    document
+      .querySelectorAll("[data-student-panel]")
+      .forEach((panel) => (panel.hidden = panel.dataset.studentPanel !== name));
+  };
+  document.querySelectorAll("[data-student-tab]").forEach((tab) => {
+    tab.onclick = () => activateTab(tab.dataset.studentTab);
+    tab.onkeydown = (event) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      const tabs = [...document.querySelectorAll("[data-student-tab]")];
+      const next =
+        (tabs.indexOf(tab) +
+          (event.key === "ArrowRight" ? 1 : -1) +
+          tabs.length) %
+        tabs.length;
+      tabs[next].click();
+      tabs[next].focus();
+    };
+  });
   const savedNotice = sessionStorage.getItem("tuitionledger:student-notice");
   if (savedNotice) {
     approvalNotice.textContent = savedNotice;
@@ -94,6 +119,8 @@ export async function studentsPage() {
     const browsers = browserRequests.filter(
       (request) => request.status === "Pending",
     );
+    document.querySelector("[data-pending-count]").textContent =
+      registrations.length + browsers.length;
     approvalHost.innerHTML =
       `${registrations
         .map(

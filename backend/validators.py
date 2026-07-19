@@ -44,9 +44,13 @@ def person_name(value, label="Name"):
 
 
 def sri_lankan_phone(value, label="Phone number"):
-    text = str(value or "").strip()
+    text = re.sub(r"[\s()-]", "", str(value or "").strip())
     if re.fullmatch(r"0[0-9]{9}", text):
         text = "+94" + text[1:]
+    elif re.fullmatch(r"7[0-9]{8}", text):
+        text = "+94" + text
+    elif re.fullmatch(r"94[0-9]{9}", text):
+        text = "+" + text
     if not re.fullmatch(r"\+94[0-9]{9}", text):
         raise ValidationError(f"Enter a valid {label.lower()} in Sri Lankan format.")
     return text
