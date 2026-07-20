@@ -54,3 +54,16 @@ test("backend exposes Supabase password recovery without changing existing auth 
   assert.match(auth, /@auth_routes\.post\("\/api\/auth\/reset-password"\)/);
   assert.match(auth, /auth_call\("\/auth\/v1\/user", \{"password": password\}, method="PUT", token=token\)/);
 });
+
+
+test("uses unique SVG gradient ids for desktop and mobile navigation", () => {
+  const layout = source("../src/pages/layout.js");
+
+  assert.match(
+    layout,
+    /const gradientId = `\$\{scope\}-\$\{key\}-glass`;/,
+  );
+  assert.match(layout, /navigation\(page, "sidebar"\)/);
+  assert.match(layout, /navigation\(page, "mobile"\)/);
+  assert.doesNotMatch(layout, /id="\$\{key\}-glass"/);
+});

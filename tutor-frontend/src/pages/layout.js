@@ -22,12 +22,13 @@ const iconGlyphs = {
   fees: '<rect x="6" y="7" width="12" height="10" rx="1.8" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M6 10h12M9 14h2.8" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>',
 };
 
-function iconSvg(key) {
+function iconSvg(key, scope) {
   const [light, dark] = iconPalette[key];
-  return `<svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="${key}-glass" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs><rect x="5" y="3.5" width="15" height="15" rx="4" fill="#fff" opacity=".22" transform="rotate(8 12.5 11)"/><rect x="3" y="5.5" width="15" height="15" rx="4" fill="url(#${key}-glass)" opacity=".82"/><path d="M5 8c3-1.6 7.5-1.7 11.2-.4" fill="none" stroke="#fff" stroke-width=".9" opacity=".34" stroke-linecap="round"/>${iconGlyphs[key]}</svg>`;
+  const gradientId = `${scope}-${key}-glass`;
+  return `<svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="${gradientId}" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs><rect x="5" y="3.5" width="15" height="15" rx="4" fill="#fff" opacity=".22" transform="rotate(8 12.5 11)"/><rect x="3" y="5.5" width="15" height="15" rx="4" fill="url(#${gradientId})" opacity=".82"/><path d="M5 8c3-1.6 7.5-1.7 11.2-.4" fill="none" stroke="#fff" stroke-width=".9" opacity=".34" stroke-linecap="round"/>${iconGlyphs[key]}</svg>`;
 }
 
-function navigation(page) {
+function navigation(page, scope) {
   return [
     ["dashboard", "Dashboard"],
     ["students", "Students"],
@@ -37,7 +38,7 @@ function navigation(page) {
   ]
     .map(
       ([id, label]) =>
-        `<a class="${page === id ? "active" : ""}" href="#${id}" ${page === id ? 'aria-current="page"' : ""}>${iconSvg(id)}<span>${label}</span>${id === "students" ? '<b class="nav-badge" data-pending-badge hidden></b>' : ""}</a>`,
+        `<a class="${page === id ? "active" : ""}" href="#${id}" ${page === id ? 'aria-current="page"' : ""}>${iconSvg(id, scope)}<span>${label}</span>${id === "students" ? '<b class="nav-badge" data-pending-badge hidden></b>' : ""}</a>`,
     )
     .join("");
 }
@@ -51,10 +52,11 @@ export function setPendingBadge(count) {
 }
 
 export function shell(page, title, body, { loadPendingBadge = true } = {}) {
-  const nav = navigation(page);
+  const sidebarNav = navigation(page, "sidebar");
+  const mobileNav = navigation(page, "mobile");
   const accountIcon =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/></svg>';
-  app.innerHTML = `<div class="app-shell"><aside><a class="logo" href="#dashboard">${logo}</a><p class="side-label">Tutor workspace</p><nav aria-label="Main navigation">${nav}</nav><button data-install-app class="side-signout" hidden>Install tutor app</button><button data-sign-out class="side-signout">Sign out</button></aside><main class="workspace"><header class="workspace-header"><div><p class="kicker">TuitionLedger / ${page}</p><h1>${title}</h1></div><details class="mobile-account-menu"><summary aria-label="Open tutor account menu">${accountIcon}</summary><div class="mobile-account-actions"><button data-install-app hidden>Install tutor app</button><button data-sign-out>Sign out</button></div></details></header>${body}</main><nav class="mobile-navigation" aria-label="Mobile navigation">${nav}</nav></div>`;
+  app.innerHTML = `<div class="app-shell"><aside><a class="logo" href="#dashboard">${logo}</a><p class="side-label">Tutor workspace</p><nav aria-label="Main navigation">${sidebarNav}</nav><button data-install-app class="side-signout" hidden>Install tutor app</button><button data-sign-out class="side-signout">Sign out</button></aside><main class="workspace"><header class="workspace-header"><div><p class="kicker">TuitionLedger / ${page}</p><h1>${title}</h1></div><details class="mobile-account-menu"><summary aria-label="Open tutor account menu">${accountIcon}</summary><div class="mobile-account-actions"><button data-install-app hidden>Install tutor app</button><button data-sign-out>Sign out</button></div></details></header>${body}</main><nav class="mobile-navigation" aria-label="Mobile navigation">${mobileNav}</nav></div>`;
   bindInstallButton();
   document.querySelectorAll("[data-sign-out]").forEach((button) => {
     button.onclick = () => {
