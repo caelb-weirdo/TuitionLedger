@@ -16,7 +16,10 @@ def dashboard_summary():
             (select count(*) from students where tutor_id=%s and status='Active')::int as total_students,
             (select count(*) from classes where tutor_id=%s and status='Active')::int as total_classes,
             (select count(*) from registration_requests where tutor_id=%s and status='Pending')::int as pending_registrations,
-            (select count(*) from fee_records where tutor_id=%s and status='Unpaid')::int as unpaid_fees""",
+            (select count(distinct f.student_id)
+             from fee_records f
+             join students s on s.id=f.student_id
+             where f.tutor_id=%s and f.status='Unpaid' and s.status='Active')::int as unpaid_fees""",
             (owner, owner, owner, owner),
         ).fetchone()
         today_classes = db.execute(

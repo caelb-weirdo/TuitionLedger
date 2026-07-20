@@ -10,7 +10,7 @@ export async function dashboard() {
       ["Total students", "#students"],
       ["Total classes", "#classes"],
       ["Pending registrations", "#students?section=approvals"],
-      ["Unpaid fees", "#fees?status=Unpaid"],
+      ["Students with unpaid fees", "#fees?status=Unpaid"],
     ]
       .map(
         ([label, href]) =>
