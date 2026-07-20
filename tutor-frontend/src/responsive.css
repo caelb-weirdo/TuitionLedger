@@ -1,0 +1,295 @@
+/* Final responsive and authentication overrides.
+   Loaded after app.css so the tutor workspace remains usable on phones and tablets. */
+
+.auth-shell {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.mobile-account-menu {
+  display: none;
+  position: relative;
+}
+
+.mobile-account-menu summary {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--border, #ffffffb8);
+  border-radius: 14px;
+  background: #ffffffb8;
+  color: var(--text, #151b4b);
+  cursor: pointer;
+  list-style: none;
+  box-shadow: 0 8px 22px #7183c220;
+}
+
+.mobile-account-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-account-menu summary svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mobile-account-actions {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(220px, calc(100vw - 40px));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border, #ffffffb8);
+  border-radius: 16px;
+  background: #fffffff7;
+  box-shadow: 0 18px 46px #1b173c2c;
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.mobile-account-actions button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text, #151b4b);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.mobile-account-actions button:hover,
+.mobile-account-actions button:focus-visible {
+  background: #eef0ff;
+}
+
+@media (max-width: 850px) {
+  .app-shell aside {
+    display: none !important;
+  }
+
+  .app-shell .workspace,
+  .app-shell > .workspace {
+    width: 100%;
+    margin-left: 0;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-account-menu {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .app-shell > .mobile-navigation {
+    position: fixed;
+    z-index: 50;
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 0;
+    padding: 8px;
+    border: 1px solid var(--border, #ffffffb8);
+    border-radius: 20px;
+    background: #fffffff2;
+    box-shadow: 0 12px 34px #1b173c30;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-navigation a {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 50px;
+    place-items: center;
+    gap: 2px;
+    padding: 4px !important;
+    border-radius: 13px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .mobile-navigation a.active {
+    background: #6657d9 !important;
+    color: #fff !important;
+  }
+
+  .mobile-navigation a > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .mobile-navigation .nav-badge {
+    position: absolute;
+    top: 3px;
+    right: max(4px, calc(50% - 25px));
+    margin: 0;
+  }
+
+  .workspace-header {
+    align-items: center;
+  }
+}
+
+@media (max-width: 700px) {
+  .fee-breakdown {
+    padding: 12px 16px;
+  }
+
+  .fee-breakdown > div {
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 12px 0;
+  }
+
+  .student-directory-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px 12px;
+    align-items: start;
+  }
+
+  .student-directory-row > span:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .student-directory-row > span:nth-child(2) {
+    display: inline-flex !important;
+    grid-column: 1;
+    grid-row: 2;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .student-directory-row > span:nth-child(2)::before {
+    content: "Grade:";
+    font-weight: 700;
+  }
+
+  .student-directory-row > span:nth-child(3) {
+    display: inline-flex !important;
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: start;
+  }
+
+  .student-directory-row .view-student {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+
+  .recent-scans p {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-shell {
+    place-items: start center;
+    padding: max(16px, env(safe-area-inset-top)) 16px
+      max(16px, env(safe-area-inset-bottom));
+  }
+
+  .auth-card {
+    width: 100%;
+    padding: 24px 20px;
+    border-radius: 20px !important;
+  }
+
+  .auth-card h1 {
+    font-size: 32px;
+    line-height: 1.1;
+  }
+
+  .auth-card .muted {
+    margin-bottom: 20px;
+  }
+
+  .qr-session-page {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .qr-session-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .qr-session-heading h2 {
+    font-size: 25px;
+  }
+
+  .qr-session-stage {
+    min-height: 300px;
+  }
+
+  .qr-focus {
+    padding: 10px;
+  }
+
+  .qr-focus .card-actions,
+  .qr-action-row,
+  .dialog-actions,
+  .dialog-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .qr-focus .card-actions .button,
+  .qr-action-row .button,
+  .dialog-actions .button,
+  .dialog-footer .button {
+    width: 100%;
+  }
+
+  .management-dialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 18px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .class-mini-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .class-mini-actions .button {
+    width: 100%;
+  }
+}
+
+@media (max-height: 650px) {
+  .auth-shell {
+    place-items: start center;
+  }
+}

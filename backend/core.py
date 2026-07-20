@@ -70,14 +70,17 @@ def tutor_id():
     return g.user["id"]
 
 
-def auth_call(path, payload):
+def auth_call(path, payload, method="POST", token=None):
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
     key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+    headers = {"apikey": key, "Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     req = Request(
         f"{url}{path}",
         data=json.dumps(payload).encode(),
-        headers={"apikey": key, "Content-Type": "application/json"},
-        method="POST",
+        headers=headers,
+        method=method,
     )
-    with urlopen(req, timeout=10) as result:
+    with _auth_urlopen(req, timeout=10) as result:
         return json.loads(result.read().decode())

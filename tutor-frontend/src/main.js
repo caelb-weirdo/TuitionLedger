@@ -1,4 +1,5 @@
 import "./app.css";
+import "./responsive.css";
 import { auth } from "./core/api.js";
 import { landing } from "./pages/landing.js";
 import { authPage } from "./pages/auth.js";
@@ -13,6 +14,31 @@ import { feesPage } from "./pages/fees.js";
 import { registerTutorPwa } from "./pwa.js";
 
 const landingSections = new Set(["features", "flow", "preview", "faq"]);
+
+function captureRecoveryCallback() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (params.get("type") !== "recovery") return;
+  const accessToken = params.get("access_token");
+  const error = params.get("error_description");
+  if (accessToken) {
+    sessionStorage.setItem("tuitionledger:recovery-token", accessToken);
+    history.replaceState(
+      null,
+      "",
+      `${location.pathname}${location.search}#reset-password`,
+    );
+  } else {
+    sessionStorage.setItem(
+      "tuitionledger:recovery-error",
+      error?.replaceAll("+", " ") || "That recovery link is invalid or expired.",
+    );
+    history.replaceState(
+      null,
+      "",
+      `${location.pathname}${location.search}#forgot-password`,
+    );
+  }
+}
 
 function showLandingSection(section) {
   landing();
@@ -29,9 +55,11 @@ function render() {
   const page = (location.hash.slice(1) || "top").split("?")[0];
   if (page === "top") landing();
   else if (landingSections.has(page)) showLandingSection(page);
-  else if (page === "login") authPage();
-  else if (page === "signup") authPage(true);
-  else if (!auth()) authPage();
+  else if (page === "login") authPage("login");
+  else if (page === "signup") authPage("signup");
+  else if (page === "forgot-password") authPage("forgot");
+  else if (page === "reset-password") authPage("reset");
+  else if (!auth()) authPage("login");
   else
     (
       ({
@@ -53,6 +81,8 @@ window.addEventListener("error", (event) => {
 window.addEventListener("unhandledrejection", (event) => {
   console.error("Unhandled promise rejection:", event.reason);
 });
+
+captureRecoveryCallback();
 const query = new URLSearchParams(location.search);
 const isStudentFlow =
   query.has("registration_token") ||

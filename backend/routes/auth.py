@@ -94,6 +94,51 @@ def login():
         return response(message="Supabase Auth could not be reached.", status=502)
 
 
+@auth_routes.post("/api/auth/request-password-reset")
+def request_password_reset():
+    email = str((request.get_json(silent=True) or {}).get("email", "")).strip()
+    if not email:
+        return response(message="Email is required.", status=422)
+    redirect = os.getenv(
+        "AUTH_PASSWORD_RESET_REDIRECT_URL",
+        f"{os.getenv('TUTOR_APP_URL', '').rstrip('/')}/?recovery=true",
+    )
+    try:
+        auth_call(
+            f"/auth/v1/recover?redirect_to={quote(redirect, safe='')}",
+            {"email": email},
+        )
+    except HTTPError:
+        pass
+    except (URLError, TimeoutError):
+        return response(message="Supabase Auth could not be reached.", status=502)
+    return response(
+        message="If that email is registered, a recovery link has been sent."
+    )
+
+
+@auth_routes.post("/api/auth/reset-password")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("token", "")).strip()
+    password = str(data.get("password", ""))
+    if not token or len(password) < 8:
+        return response(
+            message="Use a valid recovery link and a password with at least 8 characters.",
+            status=422,
+        )
+    try:
+        auth_call("/auth/v1/user", {"password": password}, method="PUT", token=token)
+        return response(message="Password updated. Sign in with your new password.")
+    except HTTPError:
+        return response(
+            message="That recovery link is invalid or expired. Request a new one.",
+            status=400,
+        )
+    except (URLError, TimeoutError):
+        return response(message="Supabase Auth could not be reached.", status=502)
+
+
 @auth_routes.post("/api/auth/refresh")
 def refresh():
     token = str((request.get_json(silent=True) or {}).get("refresh_token", "")).strip()

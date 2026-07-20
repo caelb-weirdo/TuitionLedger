@@ -52,12 +52,16 @@ export function setPendingBadge(count) {
 
 export function shell(page, title, body, { loadPendingBadge = true } = {}) {
   const nav = navigation(page);
-  app.innerHTML = `<div class="app-shell"><aside><a class="logo" href="#dashboard">${logo}</a><p class="side-label">Tutor workspace</p><nav aria-label="Main navigation">${nav}</nav><button id="install-app" class="side-signout" hidden>Install tutor app</button><button id="sign-out" class="side-signout">Sign out</button></aside><main class="workspace"><header class="workspace-header"><div><p class="kicker">TuitionLedger / ${page}</p><h1>${title}</h1></div></header>${body}</main><nav class="mobile-navigation" aria-label="Mobile navigation">${nav}</nav></div>`;
+  const accountIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/></svg>';
+  app.innerHTML = `<div class="app-shell"><aside><a class="logo" href="#dashboard">${logo}</a><p class="side-label">Tutor workspace</p><nav aria-label="Main navigation">${nav}</nav><button data-install-app class="side-signout" hidden>Install tutor app</button><button data-sign-out class="side-signout">Sign out</button></aside><main class="workspace"><header class="workspace-header"><div><p class="kicker">TuitionLedger / ${page}</p><h1>${title}</h1></div><details class="mobile-account-menu"><summary aria-label="Open tutor account menu">${accountIcon}</summary><div class="mobile-account-actions"><button data-install-app hidden>Install tutor app</button><button data-sign-out>Sign out</button></div></details></header>${body}</main><nav class="mobile-navigation" aria-label="Mobile navigation">${nav}</nav></div>`;
   bindInstallButton();
-  document.querySelector("#sign-out").onclick = () => {
-    clearAuth();
-    location.hash = "#login";
-  };
+  document.querySelectorAll("[data-sign-out]").forEach((button) => {
+    button.onclick = () => {
+      clearAuth();
+      location.hash = "#login";
+    };
+  });
   if (loadPendingBadge) {
     api("/api/registration-requests")
       .then((requests) => {
